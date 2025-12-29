@@ -1,0 +1,5 @@
+Variant,Customers,Features,Sparsity (%),Avg Activation Rate (%),Features Used,Value Min,Value Max,Value Mean
+V1_Binary,3921,200,96.88,3.12,166,1.0,1.0,1.0
+V2_Weighted,3921,200,96.88,3.12,166,7.4493,71.1498,30.3369
+V3_Binary_RFM,3921,203,95.45,3.45,169,0.0002,60.3968,0.9694
+V4_Antecedent2,3921,63,97.92,2.08,50,1.0,1.0,1.0

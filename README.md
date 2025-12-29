@@ -3,7 +3,7 @@
 ## Mục lục
 - [Giới thiệu](#giới-thiệu)
 - [Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
-- [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering) *(Đang phát triển)*
+- [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
 - [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means) *(Đang phát triển)*
 - [Cài đặt và Chạy](#cài-đặt-và-chạy)
 
@@ -235,7 +235,146 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 
 ## Yêu cầu 2: Feature Engineering
 
-*(Đang phát triển...)*
+### 📋 Yêu cầu đề bài
+
+> *"Nhóm cần thực hiện bước feature engineering cho phân cụm. Yêu cầu bắt buộc là nhóm phải xây dựng ít nhất hai biến thể đặc trưng để so sánh. Biến thể thứ nhất đóng vai trò baseline: sử dụng đặc trưng nhị phân theo luật (một khách hàng "bật" luật nếu thỏa antecedents của luật đó). Biến thể thứ hai là biến thể nâng cao: đưa trọng số vào đặc trưng luật hoặc ghép thêm RFM."*
+
+### ✅ Những phần đã thực hiện
+
+#### 2.1. Tạo 4 biến thể Feature Matrix
+
+Đã xây dựng **4 biến thể** feature matrix để so sánh và thử nghiệm:
+
+| Biến thể | Kích thước | Mô tả |
+|----------|------------|-------|
+| **V1_Binary** | 3,921 × 200 | Baseline binary (0/1) theo antecedent |
+| **V2_Weighted** | 3,921 × 200 | Weighted = lift × confidence |
+| **V3_Binary_RFM** | 3,921 × 203 | Binary + 3 cột RFM đã chuẩn hóa |
+| **V4_Antecedent2** | 3,921 × 63 | Binary, chỉ giữ luật có antecedent ≥ 2 |
+
+#### 2.2. Chi tiết từng biến thể
+
+**V1_Binary (Baseline):**
+- Giá trị 0 hoặc 1
+- 1 = Khách hàng đã mua TẤT CẢ sản phẩm trong antecedents của luật
+- Đơn giản, dễ hiểu, làm baseline để so sánh
+
+**V2_Weighted (Trọng số):**
+- Giá trị từ **7.45** đến **71.15** (khi khách kích hoạt luật)
+- Weight = lift × confidence → phản ánh "độ mạnh" của luật
+- Phân biệt được luật mạnh/yếu, không chỉ 0/1
+
+**V3_Binary_RFM (Kết hợp):**
+- 200 cột rule features (binary) + 3 cột RFM đã chuẩn hóa bằng StandardScaler
+- RFM scaled có giá trị từ **-0.92** đến **+60.40**
+- **Được khuyến nghị cho clustering** vì kết hợp cả hành vi mua kèm VÀ giá trị khách hàng
+
+**V4_Antecedent2 (Lọc luật phức tạp):**
+- Chỉ giữ **63 luật** có antecedent ≥ 2 sản phẩm (giảm 68.5% so với V1)
+- Tập trung vào pattern mua kèm phức tạp
+
+#### 2.3. Tính RFM cho khách hàng
+
+| Chỉ số | Min | Median | Max | Mean |
+|--------|-----|--------|-----|------|
+| **Recency** (ngày) | 1 | 51 | 374 | 92.2 |
+| **Frequency** (đơn) | 1 | 2 | 1,373 | 4.6 |
+| **Monetary** (GBP) | 3.75 | 653 | 1.7M | 2,302 |
+
+### 📊 Kết quả
+
+#### Bảng thống kê 4 biến thể
+
+| Biến thể | Sparsity | Avg Activation | Features Used |
+|----------|----------|----------------|---------------|
+| V1_Binary | 96.88% | 3.12% | 166/200 (83%) |
+| V2_Weighted | 96.88% | 3.12% | 166/200 (83%) |
+| V3_Binary_RFM | 95.45% | 3.45% | 169/203 (83.3%) |
+| V4_Antecedent2 | 97.92% | 2.08% | 50/63 (79.4%) |
+
+**Nhận xét:**
+- V1, V2, V3 có cùng 200 luật nên activation rate giống nhau
+- V3 có sparsity thấp nhất (tốt nhất cho clustering)
+- V4 có ít features hơn, sparsity cao nhất
+
+### 📈 Trực quan hóa kết quả
+
+#### 1. So sánh 4 biến thể Feature
+
+![So sánh 4 biến thể](images/Req2_FeatureVariantComparison.png)
+
+**Phân tích biểu đồ:**
+- **Biểu đồ trái (Features/Customers)**: V1, V2 có 200 features, V3 có 203 (thêm RFM), V4 chỉ 63
+- **Biểu đồ giữa (Sparsity)**: V3 thấp nhất (95.45%), V4 cao nhất (97.92%)
+- **Biểu đồ phải (Value Range)**: V2 có range rộng nhất (7.45-71.15), V1/V4 chỉ 0-1
+
+---
+
+#### 2. Phân bố Activation Rate (Scatter 2D + Box Plot)
+
+![Phân bố Activation Rate](images/Req2_ActivationRateDistribution.png)
+
+**Phân tích biểu đồ:**
+- **Scatter Plot (trái)**: Mỗi điểm = 1 rule, 4 màu cho 4 biến thể
+  - V1, V2, V3 có pattern giống nhau (cùng bộ 200 luật)
+  - V4 có ít điểm hơn (63 rules) và activation rate thấp hơn
+- **Box Plot (phải)**: 
+  - V1-V3: Median ≈ 3.21%, có outliers lên đến 8.37%
+  - V4: Median ≈ 2.93%, max 6.15%
+
+**Thống kê chi tiết:**
+
+| Biến thể | Features | Min | Max | Mean | Median |
+|----------|----------|-----|-----|------|--------|
+| V1 Binary | 200 | 0.00% | 8.37% | 3.12% | 3.21% |
+| V2 Weighted | 200 | 0.00% | 8.37% | 3.12% | 3.21% |
+| V3 Binary+RFM | 200* | 0.00% | 8.37% | 3.12% | 3.21% |
+| V4 Ant≥2 | 63 | 0.00% | 6.15% | 2.08% | 2.93% |
+
+*V3 tính activation rate chỉ cho 200 rule features, không tính 3 cột RFM
+
+---
+
+#### 3. Phân bố RFM (3 Histogram)
+
+![Phân bố RFM](images/Req2_RFMDistribution.png)
+
+**Phân tích biểu đồ:**
+- **Recency (trái)**: Phân bố lệch phải, đa số khách mua trong vòng 50 ngày. Median = 51 ngày.
+- **Frequency (giữa)**: Phân bố lệch phải mạnh, đa số chỉ mua 1-2 lần. Median = 2 đơn.
+- **Monetary (phải)**: Phân bố lệch phải mạnh, đa số chi tiêu dưới 1,000 GBP. Median = 653 GBP.
+
+**Ý nghĩa:**
+- Đa số khách hàng là **one-time buyer** (mua 1-2 lần)
+- Có một nhóm nhỏ khách VIP mua nhiều lần (frequency > 100)
+- Monetary có outliers lớn (max 1.7M GBP) → cần scale khi clustering
+
+### 💡 Kết luận và Khuyến nghị
+
+| Biến thể | Ưu điểm | Nhược điểm | Khuyến nghị sử dụng |
+|----------|---------|------------|---------------------|
+| **V1** | Đơn giản, baseline | Không phân biệt độ mạnh luật | So sánh, reference |
+| **V2** | Phân biệt luật mạnh/yếu | Cùng pattern như V1 | Khi cần weighted |
+| **V3** | Kết hợp rules + RFM, sparsity thấp | Phức tạp hơn | **Clustering chính** |
+| **V4** | Tập trung pattern phức tạp | Ít features, mất thông tin | Phân tích bổ sung |
+
+**Khuyến nghị:** Sử dụng **V3 (Binary + RFM)** cho bước clustering vì:
+1. Kết hợp cả hành vi mua kèm (200 rules) và giá trị khách hàng (RFM)
+2. Sparsity thấp nhất (95.45%) → clustering ổn định hơn
+3. RFM giúp phân biệt khách VIP vs thông thường
+4. Phù hợp cho chiến lược marketing đa chiều
+
+### 💾 Files output
+
+**Feature Matrices:**
+- `data/mini_project/feature_matrix_v1_binary.csv` (3,921 × 201)
+- `data/mini_project/feature_matrix_v2_weighted.csv` (3,921 × 201)
+- `data/mini_project/feature_matrix_v3_binary_rfm.csv` (3,921 × 204)
+- `data/mini_project/feature_matrix_v4_antecedent2.csv` (3,921 × 64)
+
+**Dữ liệu bổ trợ:**
+- `data/mini_project/rfm_data.csv` (3,922 × 4)
+- `data/mini_project/feature_variants_comparison.csv` (4 × 9)
 
 ---
 
@@ -272,9 +411,16 @@ ShopCluster/
 │   ├── processed/              # Dữ liệu đã xử lý
 │   │   └── basket_bool.parquet
 │   └── mini_project/           # Output của Mini Project
-│       └── rules_fpgrowth_filtered.csv
+│       ├── rules_fpgrowth_filtered.csv
+│       ├── feature_matrix_v1_binary.csv
+│       ├── feature_matrix_v2_weighted.csv
+│       ├── feature_matrix_v3_binary_rfm.csv
+│       ├── feature_matrix_v4_antecedent2.csv
+│       ├── rfm_data.csv
+│       └── feature_variants_comparison.csv
 ├── images/                     # Biểu đồ trực quan
-│   ├── Req1_*.png
+│   ├── Req1_*.png              # Biểu đồ Yêu cầu 1
+│   ├── Req2_*.png              # Biểu đồ Yêu cầu 2
 │   └── ...
 ├── notebooks/
 │   └── ShopCluster.ipynb       # Notebook chính
