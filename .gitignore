@@ -1,0 +1,81 @@
+.github/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+*.pyo
+*.pyd
+.cache/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+*.ipynb_checkpoints
+.jupyter/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Data files - uncomment if you want to ignore data files
+# data/raw/
+data/processed/
+
+# Model files - uncomment if you want to ignore model files
+# models/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+~$*
