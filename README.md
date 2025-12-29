@@ -6,6 +6,7 @@
 - [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
 - [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
 - [Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)](#yêu-cầu-4-trực-quan-hóa-2d-pcasvd)
+- [Yêu cầu 5: So sánh có hệ thống các biến thể](#yêu-cầu-5-so-sánh-có-hệ-thống-các-biến-thể-đặc-trưng)
 - [Cài đặt và Chạy](#cài-đặt-và-chạy)
 
 ---
@@ -754,6 +755,159 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 **Biểu đồ:**
 - `images/Req4_PCA_ClusterSeparation.png` - PCA 2D projection cho 4 variants
 - `images/Req4_SVD_ClusterSeparation.png` - SVD 2D projection cho 4 variants
+
+---
+
+## Yêu cầu 5: So sánh có hệ thống các biến thể đặc trưng
+
+### 📋 Yêu cầu đề bài
+
+> *"Thực hiện so sánh có hệ thống giữa các biến thể đặc trưng: rule-only vs rule+RFM, binary vs weighted rules, Top-K nhỏ vs Top-K lớn. Nhóm cần bảng tổng hợp để cho thấy cấu hình nào tốt hơn và vì sao."*
+
+### ✅ Những phần đã thực hiện
+
+#### 5.1. Bảng tổng hợp Metrics của 4 Variants
+
+| Variant | Features | Sparsity% | K | Silhouette | MaxCluster% | MinCluster% | PCA_Var% | SVD_Var% |
+|---------|----------|-----------|---|------------|-------------|-------------|----------|----------|
+| **V1_Binary** | 200 | 96.88 | 2 | 0.7039 | 96.8 | 3.2 | 36.7 | 36.6 |
+| **V2_Weighted** | 200 | 96.88 | 2 | 0.8920 | 96.8 | 3.2 | 78.1 | 78.1 |
+| **V3_Binary_RFM** | 203 | 95.45 | 2 | 0.9622* | 100.0 | 0.0 | 40.1 | 39.9 |
+| **V4_Antecedent2** | 63 | 97.92 | 5 | 0.8091 | 85.2 | 3.1 | 73.3 | 73.3 |
+
+> *V3 có Silhouette cao bất thường (0.9622) do outlier RFM gây ra phân cụm giả tạo
+
+---
+
+### 📊 5.2. So sánh Rule-only vs Rule+RFM (V1 vs V3)
+
+**Câu hỏi**: Thêm RFM có cải thiện chất lượng clustering không?
+
+| Metric | V1_Binary | V3_Binary_RFM | Winner | Lý do |
+|--------|-----------|---------------|--------|-------|
+| **Features** | 200 | 203 | V3 | Thêm 3 cột RFM |
+| **Sparsity (%)** | 96.88 | 95.45 | **V3** | Dữ liệu dày hơn (RFM không sparse) |
+| **K** | 2 | 2 | - | Giống nhau |
+| **Silhouette** | 0.7039 | 0.9622 | V3* | *Cao bất thường do outlier |
+| **Max Cluster (%)** | 96.8 | 100.0 | - | V3 tập trung 1 cụm |
+| **Min Cluster (%)** | 3.2 | 0.0 | - | V3 cụm còn lại = 0 |
+| **PCA Variance (%)** | 36.7 | 40.1 | **V3** | Giữ được nhiều thông tin hơn |
+| **SVD Variance (%)** | 36.6 | 39.9 | **V3** | Giữ được nhiều thông tin hơn |
+
+**🏆 Kết luận V1 vs V3**:
+
+| Tiêu chí | Cấu hình tốt hơn | Lý do |
+|----------|------------------|-------|
+| **Về mặt số liệu** | V3_Binary_RFM | Sparsity thấp hơn, variance cao hơn |
+| **Về mặt thực tế** | **V1_Binary** | V3 có phân bố cụm bất thường (100%/0%) do outlier RFM |
+| **Khuyến nghị** | **V1** cho hành vi mua kèm, **V3** nếu xử lý outlier | Cần loại bỏ outlier RFM trước khi dùng V3 |
+
+**Giải thích**: V3 có Silhouette cao nhưng **không đáng tin cậy** vì:
+- Outlier RFM (Monetary max = 1.7M GBP) kéo tất cả khách vào 1 cụm
+- Phân bố 100%/0% không có ý nghĩa marketing
+- V1 phân cụm ổn định hơn dựa thuần trên hành vi mua kèm
+
+---
+
+### 📊 5.3. So sánh Binary vs Weighted (V1 vs V2)
+
+**Câu hỏi**: Dùng trọng số (lift × confidence) có tốt hơn binary (0/1)?
+
+| Metric | V1_Binary | V2_Weighted | Winner | Lý do |
+|--------|-----------|-------------|--------|-------|
+| **Features** | 200 | 200 | - | Giống nhau |
+| **Sparsity (%)** | 96.88 | 96.88 | - | Giống nhau (cùng activation pattern) |
+| **Value Range** | 0 - 1 | 7.4 - 71.1 | **V2** | Phân biệt được độ mạnh luật |
+| **K** | 2 | 2 | - | Giống nhau |
+| **Silhouette** | 0.7039 | 0.8920 | **V2** | Cao hơn 26.7% |
+| **Max Cluster (%)** | 96.8 | 96.8 | - | Giống nhau |
+| **Min Cluster (%)** | 3.2 | 3.2 | - | Giống nhau |
+| **PCA Variance (%)** | 36.7 | 78.1 | **V2** | Cao hơn **2.13x** |
+| **SVD Variance (%)** | 36.6 | 78.1 | **V2** | Cao hơn **2.13x** |
+
+**🏆 Kết luận V1 vs V2**:
+
+| Tiêu chí | Cấu hình tốt hơn | Lý do |
+|----------|------------------|-------|
+| **Chất lượng clustering** | **V2_Weighted** | Silhouette cao hơn đáng kể (0.892 vs 0.704) |
+| **Giữ thông tin (2D)** | **V2_Weighted** | PCA/SVD variance gấp 2x V1 |
+| **Phân bố cụm** | Tương đương | Cả hai có cùng phân bố 96.8%/3.2% |
+| **Khuyến nghị** | **V2** | Tốt hơn ở mọi metric quan trọng |
+
+**Giải thích**: V2 tốt hơn vì:
+- Weighted encoding (lift × confidence) tạo **variance cao hơn** trong dữ liệu
+- Các khách hàng kích hoạt luật mạnh (lift cao) được phân biệt với luật yếu
+- PCA/SVD giữ được **78.1% variance** (gấp đôi V1) → Biểu đồ 2D chính xác hơn
+- Silhouette **0.892 (Excellent)** vs 0.704 (Good)
+
+---
+
+### 📊 5.4. So sánh Full Rules vs Filtered Rules (Top-K Large vs Top-K Small)
+
+**Câu hỏi**: Dùng nhiều luật (200) hay ít luật chất lượng (63, antecedent ≥ 2)?
+
+| Metric | V1_Full (200 rules) | V4_Filtered (63 rules) | Winner | Lý do |
+|--------|---------------------|------------------------|--------|-------|
+| **Features** | 200 | 63 | V1 | Đa dạng hơn |
+| **Sparsity (%)** | 96.88 | 97.92 | **V1** | Dữ liệu dày hơn |
+| **K** | 2 | 5 | **V4** | Đa dạng cụm hơn |
+| **Silhouette** | 0.7039 | 0.8091 | **V4** | Cao hơn 14.9% |
+| **Max Cluster (%)** | 96.8 | 85.2 | - | - |
+| **Min Cluster (%)** | 3.2 | 3.1 | - | - |
+| **Cluster Balance** | 30.25x | 27.48x | **V4** | Cân bằng hơn |
+| **PCA Variance (%)** | 36.7 | 73.3 | **V4** | Cao hơn **2x** |
+| **SVD Variance (%)** | 36.6 | 73.3 | **V4** | Cao hơn **2x** |
+
+**🏆 Kết luận V1 vs V4**:
+
+| Tiêu chí | Cấu hình tốt hơn | Lý do |
+|----------|------------------|-------|
+| **Số lượng cụm** | **V4_Antecedent2** | 5 cụm vs 2 cụm → Phân khúc chi tiết hơn |
+| **Chất lượng clustering** | **V4_Antecedent2** | Silhouette 0.809 vs 0.704 |
+| **Cân bằng cụm** | **V4_Antecedent2** | 27.48x vs 30.25x |
+| **Giữ thông tin (2D)** | **V4_Antecedent2** | Variance gấp 2x |
+| **Khuyến nghị** | **V4 cho marketing** | Phân khúc chi tiết, dễ xây dựng chiến lược |
+
+**Giải thích**: V4 tốt hơn cho marketing vì:
+- **5 cụm** → Có thể xây dựng 5 chiến lược marketing khác nhau
+- Chỉ dùng **63 luật có antecedent ≥ 2** → Tập trung vào pattern mua kèm phức tạp, có ý nghĩa
+- Loại bỏ luật đơn giản (1 antecedent) giúp **giảm nhiễu**
+- Cluster balance tốt hơn → Không có cụm quá lớn áp đảo
+
+**Trade-off**:
+- V1 capture **nhiều pattern hơn** (200 rules) nhưng bao gồm cả luật đơn giản
+- V4 capture **pattern chất lượng hơn** (63 rules) nhưng mất một số thông tin
+
+---
+
+### 📊 5.5. Bảng tổng hợp: Cấu hình tốt nhất theo từng mục đích
+
+| Mục đích sử dụng | Cấu hình tốt nhất | Lý do |
+|------------------|-------------------|-------|
+| **Marketing Segmentation** | **V4_Antecedent2** | 5 cụm đa dạng, dễ xây dựng chiến lược riêng cho từng nhóm |
+| **Phân tích hành vi mua kèm** | **V2_Weighted** | Phản ánh độ mạnh của luật, không chỉ 0/1 |
+| **Phân tích giá trị khách hàng** | V3_Binary_RFM* | Kết hợp rules + RFM (*cần xử lý outlier) |
+| **Baseline/Reference** | V1_Binary | Đơn giản, dễ hiểu, làm chuẩn so sánh |
+
+### 💡 Kết luận chung
+
+1. **Binary vs Weighted**: Weighted (V2) **tốt hơn** ở mọi metric quan trọng. Lý do: Trọng số (lift × confidence) tạo variance cao hơn, giúp clustering hiệu quả hơn.
+
+2. **Rule-only vs Rule+RFM**: V3 có metrics cao hơn nhưng **không đáng tin cậy** do outlier RFM. Cần xử lý outlier trước khi kết luận. Trong điều kiện hiện tại, **V1 ổn định hơn**.
+
+3. **Top-K Large vs Top-K Small**: V4 (63 luật filtered) **tốt hơn** V1 (200 luật) cho mục đích marketing vì:
+   - Nhiều cụm hơn (5 vs 2)
+   - Silhouette cao hơn
+   - Cluster balance tốt hơn
+   - Tập trung vào luật có ý nghĩa (antecedent ≥ 2)
+
+4. **Khuyến nghị cuối cùng**:
+   - **Cho Marketing**: Sử dụng **V4_Antecedent2** với K=5
+   - **Cho Phân tích**: Sử dụng **V2_Weighted** để hiểu độ mạnh của từng luật
+
+### 💾 Files output
+
+- `data/mini_project/feature_variants_comparison.csv` - Bảng tổng hợp metrics
 
 ---
 
