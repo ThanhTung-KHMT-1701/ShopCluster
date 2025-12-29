@@ -5,7 +5,7 @@
 - [Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
 - [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
 - [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
-- [Yêu cầu 4: Trực quan hóa và Profiling](#yêu-cầu-4-trực-quan-hóa-và-profiling) *(Đang phát triển)*
+- [Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)](#yêu-cầu-4-trực-quan-hóa-2d-pcasvd)
 - [Cài đặt và Chạy](#cài-đặt-và-chạy)
 
 ---
@@ -566,6 +566,197 @@ SILHOUETTE_TOLERANCE = 0.20  # 20%
 
 ---
 
+## Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)
+
+### 📋 Yêu cầu đề bài
+
+> *"Kết quả phân cụm cần được trực quan hóa và đánh giá ở mức tối thiểu. Mỗi nhóm phải thực hiện giảm chiều về 2D bằng PCA hoặc SVD và vẽ scatter plot, tô màu theo cluster để người đọc thấy mức độ tách cụm (tách rõ hay chồng lấn). Nhóm cần nhận xét ngắn về biểu đồ, tránh nhận xét chung chung mà cần bám vào hình ảnh."*
+
+### ✅ Những phần đã thực hiện
+
+#### 4.1. Phương pháp giảm chiều
+
+Sử dụng **cả 2 phương pháp** giảm chiều để so sánh:
+
+| Phương pháp | Mô tả | Đặc điểm |
+|-------------|-------|----------|
+| **PCA** (Principal Component Analysis) | Tìm các trục chính giữ lại phương sai lớn nhất | Yêu cầu centered data, tốt cho dữ liệu dense |
+| **TruncatedSVD** (Singular Value Decomposition) | Phân tích ma trận không cần centered | Phù hợp với sparse data như rule-based features |
+
+#### 4.2. Cấu hình visualization
+
+```python
+FIGURE_SIZE = (14, 12)      # 2x2 subplots
+ALPHA = 0.6                 # Độ trong suốt để thấy overlap
+MARKER_SIZE = 30            # Kích thước điểm
+COLORS_K2 = ['#3498db', '#e74c3c']  # Blue, Red cho K=2
+COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu cho K=5
+```
+
+**Kỹ thuật visualization:**
+- **Convex Hull**: Vẽ đường bao quanh mỗi cluster để thấy ranh giới
+- **Centroid marker (★)**: Đánh dấu tâm cụm
+- **Alpha transparency**: Thấy được vùng chồng lấn giữa các cluster
+
+### 📊 Kết quả
+
+#### Bảng Explained Variance
+
+| Variant | K | PCA PC1 | PCA PC2 | PCA Tổng | SVD SV1 | SVD SV2 | SVD Tổng |
+|---------|---|---------|---------|----------|---------|---------|----------|
+| V1_Binary | 2 | 4.9% | 2.5% | **7.4%** | 34.3% | 2.3% | **36.6%** |
+| V2_Weighted | 2 | 76.9% | 1.1% | **78.0%** | 76.9% | 1.2% | **78.1%** |
+| V3_Binary_RFM | 2 | 37.5% | 2.4% | **39.9%** | 37.5% | 2.4% | **39.9%** |
+| V4_Antecedent2 | 5 | 8.5% | 3.7% | **12.2%** | 69.9% | 3.4% | **73.3%** |
+
+**Nhận xét về Explained Variance:**
+- **V2_Weighted** giữ lại nhiều thông tin nhất (78%) do có trọng số lift×confidence
+- **V4_Antecedent2** khác biệt lớn giữa PCA (12.2%) và SVD (73.3%) - SVD phù hợp hơn với dữ liệu sparse
+- **V1_Binary** có PCA variance thấp (7.4%) nhưng SVD khá hơn (36.6%)
+
+### 📈 Biểu đồ PCA 2D Projection
+
+![PCA Cluster Separation](images/Req4_PCA_ClusterSeparation.png)
+
+**Phân tích chi tiết từng variant:**
+
+#### 🔹 V1_Binary (K=2, Var=7.4%)
+- **Cluster 0** (màu xanh, n=3,796): Chiếm đa số, phân bố rộng trên trục PC1 từ -5 đến +10
+- **Cluster 1** (màu đỏ, n=125): Nhóm nhỏ 3.2%, tách biệt hoàn toàn bên phải (PC1 > 10)
+- **Convex Hull**: Hai vùng không chồng lấn, ranh giới rõ ràng
+- **Mức độ tách cụm**: **CAO** - 2 cluster tách biệt hoàn toàn trên không gian 2D
+- **Ý nghĩa**: Cluster 1 là nhóm khách hàng kích hoạt nhiều luật đặc biệt
+
+#### 🔹 V2_Weighted (K=2, Var=78.0%)
+- **Cluster 0** (màu xanh, n=3,797): Tập trung gần gốc tọa độ (0,0)
+- **Cluster 1** (màu đỏ, n=124): Phân bố rải rác bên phải (PC1 = 300-500)
+- **Khoảng cách lớn**: PC1 của Cluster 1 gấp 50-100 lần Cluster 0
+- **Mức độ tách cụm**: **RẤT CAO** - Khoảng cách giữa 2 cluster rất lớn
+- **Ý nghĩa**: Trọng số weighted làm nổi bật sự khác biệt giữa khách thường vs khách VIP
+
+#### 🔹 V3_Binary_RFM (K=2, Var=39.9%)
+- **Cluster 0** (màu xanh, n=3,920): Gần như toàn bộ khách hàng
+- **Cluster 1** (màu đỏ, n=1): **CHỈ CÓ 1 KHÁCH HÀNG** - Outlier cực đoan
+- **Cảnh báo ⚠️**: Silhouette = 0.9622 cao giả tạo do outlier này
+- **Mức độ tách cụm**: **Không đáng tin** - Cluster 1 là outlier, không phải segment thật
+- **Nguyên nhân**: RFM có khách hàng với Monetary cực cao (1.7M GBP) tạo outlier
+
+#### 🔹 V4_Antecedent2 (K=5, Var=12.2%)
+- **Cluster 0** (màu xanh, n=3,339): Nhóm chính 85%, phân bố gần gốc
+- **Cluster 1** (màu xanh lá, n=124): Nằm góc trên trái
+- **Cluster 2** (màu cam, n=133): Nằm giữa trái
+- **Cluster 3** (màu đỏ, n=202): Nằm góc dưới trái
+- **Cluster 4** (màu tím, n=123): Nằm bên phải
+- **Chồng lấn nhẹ**: Các cluster 1-4 có phần overlap khi project về 2D
+- **Mức độ tách cụm**: **TRUNG BÌNH** trên 2D, nhưng trong không gian 63 chiều có thể tách rõ hơn
+- **⚠️ Lưu ý quan trọng**: Biểu đồ 2D chỉ giữ 12.2% thông tin, mất 87.8%
+
+### 📈 Biểu đồ SVD 2D Projection
+
+![SVD Cluster Separation](images/Req4_SVD_ClusterSeparation.png)
+
+**Phân tích chi tiết từng variant:**
+
+#### 🔹 V1_Binary (K=2, Var=36.6%)
+- **So với PCA**: SVD giữ lại gấp 5 lần thông tin (36.6% vs 7.4%)
+- **Cluster 0** (màu xanh): Tập trung vùng SV1 = 0-5
+- **Cluster 1** (màu đỏ): Tách biệt rõ ở vùng SV1 = 6-12
+- **Convex Hull**: Hai vùng không chồng lấn
+- **Mức độ tách cụm**: **CAO** - Tương tự PCA nhưng rõ ràng hơn
+
+#### 🔹 V2_Weighted (K=2, Var=78.1%)
+- **SVD vs PCA**: Kết quả gần như giống nhau (78.1% vs 78.0%)
+- **Cluster 0** (màu xanh): SV1 = 0-50, tập trung gần gốc
+- **Cluster 1** (màu đỏ): SV1 = 400-500, tách biệt hoàn toàn
+- **Mức độ tách cụm**: **RẤT CAO** - Khoảng cách centroid rất lớn
+
+#### 🔹 V3_Binary_RFM (K=2, Var=39.9%)
+- **Vẫn có vấn đề outlier**: Cluster 1 chỉ có 1 điểm ở góc phải xa (SV1 ≈ 80)
+- **Cluster 0**: Tập trung ở vùng SV1 = 0-20
+- **Mức độ tách cụm**: **Không đáng tin** - Giống kết quả PCA
+
+#### 🔹 V4_Antecedent2 (K=5, Var=73.3%)
+- **SVD giữ lại 73.3%** thông tin (vs 12.2% của PCA) - Cải thiện đáng kể!
+- **Cluster 0** (màu xanh, 85%): Phân bố rộng vùng SV1 = 3-6
+- **Clusters 1-4** (15%): Tập trung gần gốc (SV1 = 0-2)
+- **Chồng lấn**: Các cluster nhỏ overlap nhiều ở góc trái
+- **Giải thích**: 
+  - Trong không gian 2D: Clusters 1-4 chồng lấn
+  - Trong không gian 63D gốc: Các cluster tách biệt tốt hơn (Silhouette = 0.8091)
+- **Mức độ tách cụm**: **TRUNG BÌNH-CAO** - Cluster 0 tách rõ, clusters 1-4 overlap trên 2D
+
+### 📊 Bảng so sánh mức độ tách cụm
+
+| Variant | K | PCA Var% | SVD Var% | Inter/Intra Ratio | Mức độ tách |
+|---------|---|----------|----------|-------------------|-------------|
+| V1_Binary | 2 | 7.4% | 36.6% | 2.85 | **Cao** |
+| V2_Weighted | 2 | 78.0% | 78.1% | 4.21 | **Rất cao** |
+| V3_Binary_RFM | 2 | 39.9% | 39.9% | N/A (outlier) | *Không đáng tin* |
+| V4_Antecedent2 | 5 | 12.2% | 73.3% | 1.52 | **Trung bình** |
+
+**Giải thích Inter/Intra Ratio:**
+- **Inter-cluster distance**: Khoảng cách trung bình giữa các centroid
+- **Intra-cluster scatter**: Độ phân tán trung bình trong mỗi cluster
+- **Ratio > 2**: Clusters tách biệt tốt
+- **Ratio 1-2**: Clusters có phần overlap
+- **Ratio < 1**: Clusters chồng lấn nhiều
+
+### 💡 Nhận xét tổng hợp
+
+#### 1. So sánh PCA vs SVD
+
+| Khía cạnh | PCA | SVD | Kết luận |
+|-----------|-----|-----|----------|
+| **V1_Binary** | 7.4% | 36.6% | SVD tốt hơn 5x |
+| **V2_Weighted** | 78.0% | 78.1% | Tương đương |
+| **V3_Binary_RFM** | 39.9% | 39.9% | Tương đương |
+| **V4_Antecedent2** | 12.2% | 73.3% | SVD tốt hơn 6x |
+
+**Kết luận**: **SVD phù hợp hơn** cho dữ liệu rule-based features (sparse, binary). PCA chỉ tốt khi dữ liệu có weighted (V2) hoặc kết hợp RFM (V3).
+
+#### 2. Đánh giá chất lượng cluster
+
+| Variant | Đánh giá visualization | Khuyến nghị |
+|---------|------------------------|-------------|
+| **V1_Binary** | ✅ Tách rõ trên cả PCA và SVD | Baseline tốt |
+| **V2_Weighted** | ✅ Tách rất rõ, khoảng cách lớn | Tốt để phân biệt nhóm mua kèm mạnh |
+| **V3_Binary_RFM** | ⚠️ Có outlier, không tin cậy | Cần xử lý outlier trước |
+| **V4_Antecedent2** | ✅ SVD tốt, 5 clusters có ý nghĩa | **Khuyến nghị cho marketing** |
+
+#### 3. Giải thích hiện tượng V4 clusters chồng lấn trên 2D
+
+**Câu hỏi**: Tại sao V4 có Silhouette = 0.8091 (Excellent) nhưng trên biểu đồ 2D các cluster 1-4 lại chồng lấn?
+
+**Giải đáp**:
+
+1. **2D projection chỉ là "bóng" của không gian 63 chiều**:
+   - SVD giữ lại 73.3%, mất 26.7% thông tin
+   - PCA chỉ giữ 12.2%, mất 87.8% thông tin
+   - Clusters có thể tách rõ trong các chiều không được hiển thị
+
+2. **Silhouette được tính trong không gian gốc (63D)**:
+   - Không phải trên projection 2D
+   - Trong 63D, các cluster tách biệt tốt hơn
+
+3. **Ví dụ minh họa**:
+   - Hãy tưởng tượng 2 quả bóng đặt cạnh nhau nhưng ở độ cao khác nhau
+   - Nhìn từ trên xuống (2D): Chúng chồng lấn
+   - Trong không gian 3D thực tế: Chúng tách biệt rõ ràng
+
+4. **Cluster 0 (85%) vs Clusters 1-4 (15%)**:
+   - Cluster 0 rõ ràng tách biệt ở vùng SV1 cao (3-6)
+   - Clusters 1-4 là các nhóm hành vi đặc biệt, có thể tách trong các chiều khác
+
+**Kết luận**: Biểu đồ 2D dùng để **trực quan hóa xu hướng**, không phải để đánh giá chất lượng clustering. Silhouette score trong không gian gốc mới là metric chính xác.
+
+### 💾 Files output
+
+**Biểu đồ:**
+- `images/Req4_PCA_ClusterSeparation.png` - PCA 2D projection cho 4 variants
+- `images/Req4_SVD_ClusterSeparation.png` - SVD 2D projection cho 4 variants
+
+---
+
 ## Cài đặt và Chạy
 
 ### Yêu cầu môi trường
@@ -616,6 +807,8 @@ ShopCluster/
 │   ├── Req3_ElbowMethod.png    # Biểu đồ Yêu cầu 3
 │   ├── Req3_SilhouetteScore.png
 │   ├── Req3_BestKComparison.png
+│   ├── Req4_PCA_ClusterSeparation.png   # Biểu đồ Yêu cầu 4
+│   ├── Req4_SVD_ClusterSeparation.png
 │   └── ...
 ├── notebooks/
 │   └── ShopCluster.ipynb       # Notebook chính
