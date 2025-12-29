@@ -1,4 +1,5 @@
 .github/
+anaconda_projects/
 
 # Python
 __pycache__/
