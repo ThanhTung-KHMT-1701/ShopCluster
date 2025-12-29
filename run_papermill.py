@@ -5,8 +5,8 @@ os.makedirs("notebooks/runs", exist_ok=True)
 
 # run_preprocessing_and_eda.py
 pm.execute_notebook(
-    "notebooks/preprocessing_and_eda.ipynb",
-    "notebooks/runs/preprocessing_and_eda_run.ipynb",
+    "notebooks/01_preprocessing_and_eda.ipynb",
+    "notebooks/runs/01_preprocessing_and_eda_run.ipynb",
     parameters=dict(
         DATA_PATH="data/raw/online_retail.csv",
         COUNTRY="United Kingdom",
@@ -21,10 +21,9 @@ pm.execute_notebook(
 )
 
 # run_basket_preparation.py
-
 pm.execute_notebook(
-    "notebooks/basket_preparation.ipynb",
-    "notebooks/runs/basket_preparation_run.ipynb",
+    "notebooks/02_basket_preparation.ipynb",
+    "notebooks/runs/02_basket_preparation_run.ipynb",
     parameters=dict(
         CLEANED_DATA_PATH="data/processed/cleaned_uk_data.csv",
         BASKET_BOOL_PATH="data/processed/basket_bool.parquet",
@@ -38,8 +37,8 @@ pm.execute_notebook(
 
 # Chạy Notebook Apriori Modelling
 pm.execute_notebook(
-    "notebooks/apriori_modelling.ipynb",
-    "notebooks/runs/apriori_modelling_run.ipynb",
+    "notebooks/03_apriori_modelling.ipynb",
+    "notebooks/runs/03_apriori_modelling_run.ipynb",
     parameters=dict(
         BASKET_BOOL_PATH="data/processed/basket_bool.parquet",
         RULES_OUTPUT_PATH="data/processed/rules_apriori_filtered.csv",
@@ -75,8 +74,8 @@ pm.execute_notebook(
 
 # Chạy Notebook FP_Growth Modelling
 pm.execute_notebook(
-    "notebooks/fp_growth_modelling.ipynb",
-    "notebooks/runs/fp_growth_modelling_run.ipynb",
+    "notebooks/04_fp_growth_modelling.ipynb",
+    "notebooks/runs/04_fp_growth_modelling_run.ipynb",
     parameters=dict(
         BASKET_BOOL_PATH="data/processed/basket_bool.parquet",
         RULES_OUTPUT_PATH="data/processed/rules_fpgrowth_filtered.csv",
@@ -106,8 +105,8 @@ pm.execute_notebook(
 
 # Chạy Notebook So sánh Apriori và FP-Growth
 pm.execute_notebook(
-    "notebooks/compare_apriori_fpgrowth.ipynb",
-    "notebooks/runs/compare_apriori_fpgrowth_run.ipynb",
+    "notebooks/05_compare_apriori_fpgrowth.ipynb",
+    "notebooks/runs/05_compare_apriori_fpgrowth_run.ipynb",
     parameters=dict(
         BASKET_BOOL_PATH="data/processed/basket_bool.parquet",
 
@@ -123,8 +122,8 @@ pm.execute_notebook(
 
 # run_clustering_from_rules.py
 pm.execute_notebook(
-    "notebooks/clustering_from_rules.ipynb",
-    "notebooks/runs/clustering_from_rules_run.ipynb",
+    "notebooks/06_clustering_from_rules.ipynb",
+    "notebooks/runs/06_clustering_from_rules_run.ipynb",
     parameters=dict(
         CLEANED_DATA_PATH="data/processed/cleaned_uk_data.csv",
         RULES_INPUT_PATH="data/processed/rules_apriori_filtered.csv",
