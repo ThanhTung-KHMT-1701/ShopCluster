@@ -1,0 +1,5 @@
+Variant,K,Silhouette,Inertia,Time_sec,C0_Count,C0_Pct,C1_Count,C1_Pct,C2_Count,C2_Pct,C3_Count,C3_Pct,C4_Count,C4_Pct
+V1_Binary,2,0.7039,17604.41,0.427,3796,96.8,125,3.2,,,,,,
+V2_Weighted,2,0.892,9015844.0,0.438,3797,96.8,124,3.2,,,,,,
+V3_Binary_RFM,2,0.9622,27820.19,0.444,3920,100.0,1,0.0,,,,,,
+V4_Antecedent2,5,0.8091,1194.58,0.4,3339,85.2,124,3.2,133.0,3.4,202.0,5.2,123.0,3.1

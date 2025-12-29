@@ -4,7 +4,8 @@
 - [Giới thiệu](#giới-thiệu)
 - [Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
 - [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
-- [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means) *(Đang phát triển)*
+- [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
+- [Yêu cầu 4: Trực quan hóa và Profiling](#yêu-cầu-4-trực-quan-hóa-và-profiling) *(Đang phát triển)*
 - [Cài đặt và Chạy](#cài-đặt-và-chạy)
 
 ---
@@ -380,7 +381,188 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 
 ## Yêu cầu 3: Phân cụm K-Means
 
-*(Đang phát triển...)*
+### 📋 Yêu cầu đề bài
+
+> *"Sau khi có vector đặc trưng, nhóm cần thực hiện chọn số cụm K và huấn luyện mô hình. Yêu cầu tối thiểu là nhóm phải sử dụng Silhouette score hoặc Elbow để khảo sát K trong một khoảng giá trị hợp lý (ví dụ 2 đến 10 hoặc 2 đến 12), sau đó chọn ra K tốt nhất theo kết quả và giải thích ngắn gọn lý do lựa chọn."*
+
+### ✅ Những phần đã thực hiện
+
+#### 3.1. Thiết lập tham số và cấu trúc thử nghiệm
+
+**Tham số K-Means:**
+- `K_RANGE = range(2, 13)` - Khảo sát K từ 2 đến 12
+- `RANDOM_STATE = 42` - Đảm bảo reproducibility
+- `N_INIT = 10` - Số lần khởi tạo centroids
+
+**Cơ chế chọn K linh hoạt:**
+- `USE_CACHED_K`: Load K từ file config (tránh tính lại)
+- `CUSTOM_K`: Override K cụ thể cho từng variant
+- `SILHOUETTE_TOLERANCE = 20%`: Ưu tiên K > 2 nếu Silhouette chênh lệch không đáng kể
+
+#### 3.2. Khảo sát K bằng Elbow Method
+
+Thực hiện **44 thí nghiệm** (4 variants × 11 K) để tính Inertia, sau đó **chuẩn hóa Min-Max về [0, 1]** để dễ so sánh xu hướng giữa các variants (do mỗi variant có scale Inertia khác nhau).
+
+![Elbow Method](images/Req3_ElbowMethod.png)
+
+**Công thức Normalized Inertia:**
+```
+Inertia_norm = (Inertia - Inertia_min) / (Inertia_max - Inertia_min)
+```
+
+**Phân tích biểu đồ (4 subplots - Normalized Inertia):**
+- **V1_Binary**: Normalized Inertia giảm từ 1.0 (K=2) xuống 0.0 (K=12), đường cong khá tuyến tính, không có điểm khuỷu tay rõ ràng
+- **V2_Weighted**: Giảm nhanh từ K=2 đến K=4 (từ 1.0 xuống ~0.4), sau đó giảm chậm dần. Vùng K=3-6 (màu highlight) là khu vực tiềm năng
+- **V3_Binary_RFM**: Giảm đều và gần như tuyến tính từ 1.0 xuống 0.0, khó xác định điểm khuỷu tay
+- **V4_Antecedent2**: Giảm nhanh từ K=2 đến K=4, sau đó ổn định. Có dấu hiệu "khuỷu tay" tại K=4-5
+
+**Vùng Suggested Range (K=3-6):**
+- Được highlight màu nhạt trong mỗi subplot
+- Đây là vùng K thường cho kết quả clustering có ý nghĩa marketing (không quá ít, không quá nhiều nhóm)
+
+**Nhận xét**: 
+- Normalized Inertia giúp so sánh xu hướng giữa các variants có scale khác nhau
+- Elbow Method không cho điểm khuỷu tay rõ ràng trên dữ liệu sparse này
+- V2 và V4 có xu hướng "khuỷu" rõ hơn V1 và V3
+- Cần kết hợp với Silhouette Score để chọn K chính xác hơn
+
+#### 3.3. Khảo sát K bằng Silhouette Score
+
+![Silhouette Score](images/Req3_SilhouetteScore.png)
+
+**Phân tích biểu đồ:**
+- **Line Plot (trái)**: Silhouette theo K cho 4 variants
+  - V3_Binary_RFM đạt Silhouette cao nhất tại K=2 (0.9622) nhưng giảm mạnh khi K tăng
+  - V4_Antecedent2 ổn định nhất, Silhouette ~0.80-0.83 trong khoảng K=2-12
+  - V2_Weighted giảm dần từ 0.89 (K=2) xuống 0.50 (K=12)
+  - V1_Binary giảm từ 0.70 (K=2) xuống 0.41 (K=12)
+
+- **Heatmap (phải)**: Màu càng đậm = Silhouette càng cao
+  - Cột V3_Binary_RFM có màu đậm nhất tại K=2
+  - Cột V4_Antecedent2 đều màu từ xanh lá đến xanh dương (ổn định)
+
+**Bảng Silhouette Score:**
+
+| K | V1_Binary | V2_Weighted | V3_Binary_RFM | V4_Antecedent2 |
+|---|-----------|-------------|---------------|----------------|
+| 2 | 0.7039 | 0.8920 | **0.9622** | 0.8998 |
+| 3 | 0.5078 | 0.5889 | 0.6425 | 0.8000 |
+| 4 | 0.5074 | 0.5825 | 0.2004 | 0.7932 |
+| 5 | 0.4769 | 0.5501 | 0.2400 | **0.8091** |
+| 6 | 0.4792 | 0.5724 | 0.2556 | 0.8072 |
+
+#### 3.4. Smart Auto K Selection
+
+Thay vì chỉ chọn K có Silhouette cao nhất, sử dụng cơ chế **Smart Auto** với 3 tiêu chí:
+
+**Tiêu chí 1 - Kiểm tra phân bố cluster:**
+- Min cluster ≥ 2% tổng số khách hàng
+- Min cluster ≥ 50 khách hàng
+- Loại bỏ các K tạo cluster outlier (quá nhỏ)
+
+**Tiêu chí 2 - Ưu tiên K > 2:**
+- K=2 thường ít ý nghĩa marketing (chỉ chia 2 nhóm)
+- Nếu K>2 có Silhouette chỉ thấp hơn ≤ 20%, ưu tiên chọn K>2
+- V4_Antecedent2: K=5 (Sil=0.8091) được chọn thay K=2 (Sil=0.8998) vì chênh 10.07%
+
+**Tiêu chí 3 - Fallback:**
+- Nếu không có K hợp lệ, chọn K=2 làm mặc định
+
+![So sánh Best K](images/Req3_BestKComparison.png)
+
+**Phân tích biểu đồ:**
+- So sánh K được chọn và Silhouette tương ứng cho 4 variants
+- V1, V2, V3 chọn K=2 (không có K>2 nào đủ tốt)
+- V4 chọn K=5 (ưu tiên K>2 vì chênh lệch < 20%)
+
+#### 3.5. Huấn luyện K-Means và kết quả
+
+**Kết quả phân cụm:**
+
+| Variant | K | Silhouette | Đánh giá | Phân bố Cluster |
+|---------|---|------------|----------|-----------------|
+| **V1_Binary** | 2 | 0.7039 | Excellent | C0: 96.8%, C1: 3.2% |
+| **V2_Weighted** | 2 | 0.8920 | Excellent | C0: 96.8%, C1: 3.2% |
+| **V3_Binary_RFM** | 2 | 0.9622 | Excellent* | C0: 100%, C1: 0.03% |
+| **V4_Antecedent2** | 5 | 0.8091 | Excellent | C0: 85.2%, C1-4: 3-5% mỗi |
+
+*⚠️ V3 có Silhouette cao giả tạo do 1 outlier cực mạnh trong RFM
+
+**Chi tiết phân bố V4_Antecedent2 (K=5):** ✅ **Khuyến nghị**
+
+| Cluster | Số KH | Tỷ lệ | Đặc điểm |
+|---------|-------|-------|----------|
+| 0 | 3,339 | 85.2% | Nhóm chính |
+| 1 | 124 | 3.2% | Nhóm hành vi đặc biệt 1 |
+| 2 | 133 | 3.4% | Nhóm hành vi đặc biệt 2 |
+| 3 | 202 | 5.2% | Nhóm hành vi đặc biệt 3 |
+| 4 | 123 | 3.1% | Nhóm hành vi đặc biệt 4 |
+
+### 💡 Kết luận và Khuyến nghị
+
+#### Biến thể tốt nhất: **V4_Antecedent2 với K=5**
+
+**Lý do:**
+1. **Phân bố cluster hợp lý**: 1 nhóm chính (85%) + 4 nhóm nhỏ (3-5% mỗi nhóm)
+2. **Silhouette cao và ổn định**: 0.8091 (Excellent)
+3. **Có ý nghĩa marketing**: 5 nhóm khách hàng khác biệt để target
+4. **Tập trung vào pattern phức tạp**: Chỉ dùng 63 luật có antecedent ≥ 2
+
+#### Các biến thể khác:
+
+| Biến thể | Nhận xét | Khuyến nghị |
+|----------|----------|-------------|
+| V1_Binary | K=2, phân bố 97%-3%, baseline tốt | Dùng để so sánh |
+| V2_Weighted | K=2, tương tự V1 nhưng weighted | Khi cần phân biệt độ mạnh luật |
+| V3_Binary_RFM | Silhouette cao nhưng có 1 outlier | Cần xử lý outlier trước khi dùng |
+
+#### Giải thích lựa chọn K (theo yêu cầu đề bài):
+
+> *"Phần giải thích không cần dài, nhưng phải thể hiện tư duy: không chọn K chỉ vì "đẹp", mà còn cân nhắc xem cụm có thực sự tạo ra ý nghĩa hành động marketing hay không."*
+
+**Tư duy chọn K:**
+- K=2 cho Silhouette cao nhất nhưng chỉ chia 2 nhóm (97% vs 3%) → Ít ý nghĩa marketing
+- K=5 cho V4_Antecedent2 tạo 5 nhóm với Silhouette vẫn Excellent (0.8091)
+- 4 nhóm nhỏ (3-5%) là các nhóm khách hàng có hành vi mua kèm đặc biệt → Target được
+- Chênh lệch Silhouette 10% (0.8998 vs 0.8091) chấp nhận được để có 5 nhóm thay vì 2
+
+### 💾 Files output
+
+**Kết quả thí nghiệm:**
+- `clustering_experiments/elbow_results.csv` - Inertia cho 44 thí nghiệm
+- `clustering_experiments/silhouette_results.csv` - Silhouette cho 44 thí nghiệm
+- `clustering_experiments/kmeans_final_stats.csv` - Thống kê mô hình cuối
+
+**Cluster Labels:**
+- `customer_clusters_v1_k2.csv` - V1 với K=2 (3,921 khách hàng)
+- `customer_clusters_v2_k2.csv` - V2 với K=2
+- `customer_clusters_v3_k2.csv` - V3 với K=2
+- `customer_clusters_v4_k5.csv` - V4 với K=5
+- `customer_clusters_all_variants.csv` - Tổng hợp (3,921 × 5)
+
+**Config để reload:**
+- `clustering_experiments/optimal_k_config.json` - Lưu K và Silhouette đã chọn
+
+### 🔧 Hướng dẫn sử dụng lại
+
+```python
+# Để dùng K đã lưu (không tính lại Elbow/Silhouette):
+USE_CACHED_K = True
+
+# Để tính lại từ đầu:
+USE_CACHED_K = False
+
+# Để override K cụ thể cho từng variant:
+CUSTOM_K = {
+    'V1_Binary': 3,
+    'V2_Weighted': 4,
+    'V3_Binary_RFM': 2,
+    'V4_Antecedent2': 5
+}
+
+# Điều chỉnh ngưỡng ưu tiên K > 2:
+SILHOUETTE_TOLERANCE = 0.20  # 20%
+```
 
 ---
 
@@ -417,10 +599,23 @@ ShopCluster/
 │       ├── feature_matrix_v3_binary_rfm.csv
 │       ├── feature_matrix_v4_antecedent2.csv
 │       ├── rfm_data.csv
-│       └── feature_variants_comparison.csv
+│       ├── feature_variants_comparison.csv
+│       ├── customer_clusters_v1_k2.csv       # Yêu cầu 3
+│       ├── customer_clusters_v2_k2.csv
+│       ├── customer_clusters_v3_k2.csv
+│       ├── customer_clusters_v4_k5.csv
+│       ├── customer_clusters_all_variants.csv
+│       └── clustering_experiments/           # Thí nghiệm K
+│           ├── elbow_results.csv
+│           ├── silhouette_results.csv
+│           ├── kmeans_final_stats.csv
+│           └── optimal_k_config.json
 ├── images/                     # Biểu đồ trực quan
 │   ├── Req1_*.png              # Biểu đồ Yêu cầu 1
 │   ├── Req2_*.png              # Biểu đồ Yêu cầu 2
+│   ├── Req3_ElbowMethod.png    # Biểu đồ Yêu cầu 3
+│   ├── Req3_SilhouetteScore.png
+│   ├── Req3_BestKComparison.png
 │   └── ...
 ├── notebooks/
 │   └── ShopCluster.ipynb       # Notebook chính
