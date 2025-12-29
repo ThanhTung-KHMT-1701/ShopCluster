@@ -911,6 +911,315 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 
 ---
 
+## Yêu cầu 6: Profiling và Diễn giải Cụm
+
+### 📋 Yêu cầu đề bài
+
+> *"Mỗi nhóm phải tạo một bảng thống kê theo cụm, trong đó ít nhất có số lượng khách hàng của cụm. Nếu nhóm có dùng RFM thì bắt buộc báo cáo thêm trung bình hoặc trung vị Recency–Frequency–Monetary theo cụm. Đồng thời, nhóm phải rút ra 'dấu hiệu đặc trưng' của cụm dựa trên luật: ví dụ liệt kê Top 10 luật hoặc Top rule-features được kích hoạt nhiều nhất trong cụm. Từ các thông tin này, nhóm phải đặt tên cho từng cụm (một tên tiếng Anh và một tên tiếng Việt dễ nhớ), mô tả persona của cụm trong 1 câu, và đưa ra một chiến lược marketing cụ thể dành cho cụm đó (bundle/cross-sell/upsell, ưu đãi theo nhóm sản phẩm, chăm sóc VIP, chiến dịch kích hoạt khách ngủ đông, v.v.). Chiến lược phải liên hệ trực tiếp đến đặc trưng cụm, không viết chung chung."*
+
+### ✅ Những phần đã thực hiện
+
+#### 6.1. Phân bố khách hàng theo cụm
+
+Bảng thống kê số lượng khách hàng trong từng cụm cho mỗi biến thể:
+
+| Variant | Cluster | N_Customers | Percentage (%) |
+|---------|---------|-------------|----------------|
+| **V1_Binary** | 0 | 3,796 | 96.8 |
+| | 1 | 125 | 3.2 |
+| **V2_Weighted** | 0 | 3,797 | 96.8 |
+| | 1 | 124 | 3.2 |
+| **V3_Binary_RFM** | 0 | 3,920 | 100.0 |
+| | 1 | 1 | 0.0 |
+| **V4_Antecedent2** | 0 | 3,339 | 85.2 |
+| | 1 | 124 | 3.2 |
+| | 2 | 133 | 3.4 |
+| | 3 | 202 | 5.2 |
+| | 4 | 123 | 3.1 |
+
+**Nhận xét:**
+- **V1 & V2**: Phân cụm tương tự, 96.8% khách thuộc cụm chính
+- **V3**: Có outlier RFM gây phân bố không đồng đều (100%/0%)
+- **V4**: Phân khúc tốt nhất với 5 cụm có kích thước đa dạng, phù hợp cho marketing
+
+![Cluster Distribution](images/Req6_ClusterDistribution.png)
+
+**Giải thích biểu đồ Req6_ClusterDistribution.png:**
+
+Biểu đồ hiển thị 4 bar charts (2x2 grid) thể hiện phân bố số lượng khách hàng theo từng cluster cho mỗi biến thể:
+
+- **V1_Binary (K=2)**: Biểu đồ cột cho thấy cluster 0 (màu xanh lá) chiếm 3,796 khách (96.8%), cluster 1 (màu đỏ) chỉ có 125 khách (3.2%). Sự chênh lệch rất lớn giữa 2 clusters.
+
+- **V2_Weighted (K=2)**: Tương tự V1, cluster 0 chiếm 3,797 khách (96.8%), cluster 1 có 124 khách (3.2%). Weighted encoding không thay đổi đáng kể phân bố cụm.
+
+- **V3_Binary_RFM (K=2)**: Cluster 0 chiếm gần như toàn bộ với 3,920 khách (100.0%), cluster 1 chỉ có 1 khách (0.0%). Đây là kết quả do outlier RFM gây ra.
+
+- **V4_Antecedent2 (K=5)**: Biểu đồ có 5 cột thể hiện sự phân khúc đa dạng hơn. Cluster 0 (85.2%, 3,339 khách) là nhóm chính, các clusters 1-4 có kích thước từ 123-202 khách (3.1%-5.2%), cho phép xây dựng chiến lược marketing riêng biệt cho từng nhóm nhỏ.
+
+#### 6.2. Phân tích RFM theo Cụm
+
+##### V1_Binary (K=2)
+| Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
+|---------|-------------|--------|----------|--------|----------|--------|----------|
+| 0 | 3,796 | 93.2 | 51 days | 4.1 | 2 | 1,810 | 630 GBP |
+| 1 | 125 | 60.5 | 26 days | 21.2 | 5 | 17,250 | 1,653 GBP |
+
+##### V2_Weighted (K=2)
+| Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
+|---------|-------------|--------|----------|--------|----------|--------|----------|
+| 0 | 3,797 | 93.2 | 51 days | 4.1 | 2 | 1,810 | 631 GBP |
+| 1 | 124 | 60.5 | 26 days | 21.3 | 5 | 17,366 | 1,638 GBP |
+
+##### V3_Binary_RFM (K=2)
+| Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
+|---------|-------------|--------|----------|--------|----------|--------|----------|
+| 0 | 3,920 | 92.2 | 51 days | 4.2 | 2 | 1,864 | 652 GBP |
+| 1 | 1 | 1.0 | 1 day | 1,373 | 1,373 | 1,716,831 | 1,716,831 GBP |
+
+> ⚠️ **Lưu ý**: V3 có 1 outlier RFM với M = 1.7M GBP, gây phân cụm không đáng tin cậy
+
+##### V4_Antecedent2 (K=5) - **Khuyến nghị cho Marketing**
+| Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
+|---------|-------------|--------|----------|--------|----------|--------|----------|
+| 0 | 3,339 | 101.2 | 59 days | 3.6 | 2 | 1,563 | 559 GBP |
+| 1 | 124 | 60.5 | 26 days | 21.3 | 5 | 17,366 | 1,638 GBP |
+| 2 | 133 | 26.4 | 18 days | 7.2 | 5 | 3,023 | 1,536 GBP |
+| 3 | 202 | 39.3 | 19 days | 6.8 | 4 | 2,985 | 1,685 GBP |
+| 4 | 123 | 37.1 | 23 days | 8.6 | 6 | 5,258 | 2,158 GBP |
+
+**Phân tích V4:**
+- **Cluster 0**: Nhóm lớn nhất (85.2%), R cao (101 ngày), F thấp (3.6), M thấp (1,563 GBP) → **Casual Buyers**
+- **Cluster 1**: R trung bình (60 ngày), F rất cao (21.3), M rất cao (17,366 GBP) → **Super VIP**
+- **Cluster 2**: R thấp nhất (26 ngày), F khá (7.2), M khá (3,023 GBP) → **Recent Active**
+- **Cluster 3**: R thấp (39 ngày), F khá (6.8), M khá (2,985 GBP) → **Loyal High-Value**
+- **Cluster 4**: R thấp (37 ngày), F cao (8.6), M cao (5,258 GBP) → **Loyal High-Value**
+
+![RFM by Cluster V1](images/Req6_RFMByCluster_V1_Binary.png)
+
+**Giải thích biểu đồ Req6_RFMByCluster_V1_Binary.png:**
+
+Biểu đồ gồm 3 box plots (Recency, Frequency, Monetary) cho 2 clusters của V1_Binary:
+
+- **Recency (trái)**: Cluster 0 (xanh lá) có median ~51 ngày với phân phối rộng, nhiều outliers. Cluster 1 (đỏ) có median thấp hơn ~26 ngày, cho thấy nhóm này mua gần đây hơn.
+
+- **Frequency (giữa)**: Cluster 0 có median = 2 đơn hàng, box nhỏ gọn. Cluster 1 có median = 5 đơn nhưng phân phối rất rộng với outliers lên đến hàng chục đơn, cho thấy đây là nhóm mua nhiều.
+
+- **Monetary (phải)**: Cluster 0 có median ~630 GBP. Cluster 1 có median ~1,653 GBP với nhiều outliers vượt xa box plot, cho thấy đây là nhóm có giá trị cao (VIP).
+
+![RFM by Cluster V2](images/Req6_RFMByCluster_V2_Weighted.png)
+
+**Giải thích biểu đồ Req6_RFMByCluster_V2_Weighted.png:**
+
+Tương tự V1, biểu đồ V2 có pattern gần như giống hệt do weighted encoding không ảnh hưởng đến phân bố RFM mà chỉ thay đổi cách tính điểm đặc trưng:
+
+- **Recency**: Cluster 0 median ~51 ngày, Cluster 1 median ~26 ngày
+- **Frequency**: Cluster 0 median = 2, Cluster 1 median = 5 với outliers cao
+- **Monetary**: Cluster 0 median ~631 GBP, Cluster 1 median ~1,638 GBP
+
+Điều này chứng minh weighted encoding (lift × confidence) chỉ cải thiện chất lượng phân cụm (Silhouette 0.892 vs 0.704) nhưng không thay đổi bản chất phân khúc khách hàng.
+
+![RFM by Cluster V3](images/Req6_RFMByCluster_V3_Binary_RFM.png)
+
+**Giải thích biểu đồ Req6_RFMByCluster_V3_Binary_RFM.png:**
+
+Biểu đồ V3 có dạng bất thường do outlier RFM:
+
+- **Recency**: Cluster 0 có phân phối bình thường với median ~51 ngày. Cluster 1 (chỉ 1 khách) có R = 1 ngày.
+
+- **Frequency**: Cluster 0 có median = 2 đơn. Cluster 1 có F = 1,373 đơn hàng - một giá trị cực kỳ bất thường, tạo ra spike trên biểu đồ.
+
+- **Monetary**: Cluster 0 median ~652 GBP. Cluster 1 có M = 1,716,831 GBP - một outlier khổng lồ chiếm gần như toàn bộ scale của biểu đồ.
+
+Kết luận: V3 không đáng tin cậy cho phân tích marketing do bị chi phối bởi 1 outlier duy nhất.
+
+![RFM by Cluster V4](images/Req6_RFMByCluster_V4_Antecedent2.png)
+
+**Giải thích biểu đồ Req6_RFMByCluster_V4_Antecedent2.png:**
+
+Biểu đồ V4 có 5 box plots cho mỗi metric RFM, thể hiện sự phân khúc rõ ràng:
+
+- **Recency**: Cluster 0 (xanh lá) có median ~59 ngày - nhóm ít hoạt động. Cluster 2 (xanh dương) có median thấp nhất ~18 ngày - nhóm mới/active. Clusters 1, 3, 4 có median 19-26 ngày.
+
+- **Frequency**: Cluster 1 (đỏ) nổi bật với median = 5 và outliers rất cao (>20 đơn) - đây là nhóm VIP. Clusters 2, 3, 4 có median 4-6 đơn. Cluster 0 chỉ có median = 2 đơn.
+
+- **Monetary**: Cluster 1 có phân phối vượt trội với nhiều outliers trên 10,000 GBP - Super VIP. Cluster 4 có median cao thứ 2 (~2,158 GBP). Cluster 0 có median thấp nhất (~559 GBP).
+
+Biểu đồ cho thấy V4 phân khúc thành công 5 nhóm khách hàng có hành vi RFM khác biệt rõ ràng.
+
+#### 6.3. Top 10 Luật được kích hoạt nhiều nhất theo Cụm
+
+Dựa trên phân tích rule activation trong từng cluster, chúng tôi xác định được các luật kết hợp đặc trưng cho mỗi nhóm khách hàng. Những luật này thể hiện hành vi mua kèm phổ biến nhất trong từng cụm.
+
+![Rule Activation Heatmap](images/Req6_RuleActivationHeatmap.png)
+
+**Giải thích biểu đồ Req6_RuleActivationHeatmap.png:**
+
+Heatmap hiển thị tỷ lệ kích hoạt (Activation Rate %) của Top 15 luật kết hợp theo 5 clusters của V4_Antecedent2:
+
+- **Trục Y (dọc)**: Liệt kê 15 luật kết hợp có tỷ lệ kích hoạt cao nhất, mỗi luật được rút gọn tên (~40 ký tự đầu). Ví dụ: "PINK REGENCY TEACUP AND SAUCER → GREEN RE...", "SET/6 RED SPOTTY PAPER CUPS → SET/6 RED..."
+
+- **Trục X (ngang)**: 5 clusters (Cluster 0-4)
+
+- **Màu sắc**: Gradient từ vàng nhạt (0%) đến đỏ đậm (>10%). Mỗi ô hiển thị giá trị % cụ thể.
+
+- **Pattern quan sát được**:
+  - **Cluster 0** (Mainstream, 85.2%): Có activation rate thấp nhất (<1-2%) cho hầu hết các luật, do đây là nhóm mua ít, không có hành vi mua kèm đặc trưng.
+  - **Clusters 1-4** (nhóm nhỏ): Có activation rate cao hơn đáng kể (5-15%), cho thấy các nhóm này có hành vi mua kèm rõ ràng hơn.
+  - **Cluster 1** (Champion VIP): Có nhiều ô màu đỏ đậm, cho thấy VIP kích hoạt nhiều luật do mua đa dạng sản phẩm.
+
+- **Ý nghĩa marketing**: Các luật có activation rate cao trong cluster cụ thể có thể dùng làm bundle recommendation cho nhóm đó.
+
+**Nhận xét:**
+- Các clusters nhỏ (1-4) có activation rate cao hơn clusters lớn (0)
+- Luật được kích hoạt nhiều nhất thường liên quan đến các sản phẩm gift, decoration
+- Cluster VIP có xu hướng kích hoạt nhiều luật hơn do mua đa dạng sản phẩm
+
+#### 6.4. Đặt tên Cụm và Mô tả Persona
+
+**Tiêu chí phân loại Segment Type:**
+
+| Segment Type | Tiêu chí | Ý nghĩa |
+|--------------|----------|---------|
+| **Mainstream** | >80% khách hàng, R cao (>90 ngày) | Nhóm đại chúng, mua ít, không thường xuyên |
+| **Champion** | F ≥10 và M ≥10,000 GBP | Khách VIP, mua nhiều, giá trị cao |
+| **Recent** | R ≤30 ngày và chưa đạt Champion | Khách mới hoặc vừa mua gần đây |
+| **Loyal** | F ≥5 và M ≥2,500 GBP | Khách trung thành, giá trị khá cao |
+| **AtRisk** | R >60 ngày và F ≥3 | Khách có nguy cơ rời bỏ |
+| **Rising** | Còn lại | Khách tiềm năng, cần phát triển |
+
+##### Bảng đặt tên Cụm cho V4_Antecedent2 (Khuyến nghị):
+
+| Cluster | Name_EN | Name_VN | Segment_Type | N_Customers | Pct (%) |
+|---------|---------|---------|--------------|-------------|---------|
+| 0 | Mainstream Casual Buyers | Khach Hang Pho Thong | Mainstream | 3,339 | 85.2 |
+| 1 | Champion Super VIP | Khach VIP Sieu Cap | Champion | 124 | 3.2 |
+| 2 | Recent Active Buyers | Khach Hang Moi Tich Cuc | Recent | 133 | 3.4 |
+| 3 | Loyal High-Value | Khach Hang Trung Thanh | Loyal | 202 | 5.2 |
+| 4 | Loyal High-Value | Khach Hang Trung Thanh | Loyal | 123 | 3.1 |
+
+##### Mô tả Persona từng Cụm:
+
+| Cluster | Persona |
+|---------|---------|
+| **0 - Mainstream** | Khách hàng phổ thông, mua ít, R cao (~101 ngày), phù hợp chiến dịch kích hoạt và bundle giá tốt |
+| **1 - Champion** | Super VIP, F rất cao (21.3), M rất cao (17,366 GBP), cần chăm sóc đặc biệt và trải nghiệm exclusive |
+| **2 - Recent** | Khách mới hoặc vừa mua gần đây (R=26 ngày), cần nurture để chuyển thành loyal |
+| **3 - Loyal** | Khách trung thành, F=6.8, M=2,985 GBP, tiềm năng upsell lên premium |
+| **4 - Loyal** | Khách trung thành cao cấp, F=8.6, M=5,258 GBP, tiềm năng referral program |
+
+#### 6.5. Chiến lược Marketing cụ thể cho từng Cụm
+
+##### Bảng chiến lược Marketing theo Segment Type:
+
+| Segment Type | Strategy Type | Offer | Channel | Timing | KPI Target |
+|--------------|---------------|-------|---------|--------|------------|
+| **Mainstream** | Mass Cross-sell & Bundle Promotion | Flash sale 15-20%, bundle 3+ products giảm thêm 10%, freeship đơn >30 GBP | Email blast, Social ads, Retargeting | Weekend campaigns, seasonal sales | Tăng AOV +15%, conversion +5% |
+| **Champion** | VIP Exclusive & Luxury Experience | Private sale trước 48h, giảm 25% cho premium items, free gift wrapping, dedicated support | Personal email, Phone call, VIP app notification | Quarterly exclusive events | Retention 95%, M +10%, referral |
+| **Recent** | Engagement & Second Purchase Push | Welcome offer 10% cho đơn thứ 2, review reward points, early access new arrivals | Welcome email series, Push notification | 7-14 ngày sau đơn đầu | Second purchase +20%, review +30% |
+| **Loyal** | Loyalty Program & Upsell Premium | Điểm thưởng 2x, upgrade free shipping tier, exclusive preview collections, birthday voucher 20% | Loyalty app, Personalized email | Monthly engagement touchpoints | Upsell +25%, AOV +20%, referral +15% |
+| **AtRisk** | Win-back & Re-engagement | Come back offer 25%, reminder về wishlist, limited time discount | Re-engagement email, SMS reminder | After 60 days inactive | Reactivation 15%, prevent churn |
+| **Rising** | Nurture & Convert | Progressive discount (5%→10%→15%), category recommendations, educational content | Automated nurture flow | Based on behavior triggers | Conversion to Loyal +10% |
+
+##### Bundle/Cross-sell Recommendations từ Association Rules:
+
+Dựa trên các luật kết hợp có Lift cao nhất trong từng cluster:
+
+| Cluster | Top Bundle Recommendation | Lift | Confidence |
+|---------|---------------------------|------|------------|
+| **0 - Mainstream** | PINK REGENCY TEACUP AND SAUCER + GREEN REGENCY TEACUP AND SAUCER | 71.09 | 0.96 |
+| **1 - Champion** | SET/6 RED SPOTTY PAPER CUPS + SET/6 RED SPOTTY PAPER PLATES | 55.31 | 0.89 |
+| **2 - Recent** | JUMBO BAG RED RETROSPOT + JUMBO BAG PINK POLKADOT | 35.02 | 0.82 |
+| **3 - Loyal** | ROUND SNACK BOXES SET OF 4 FRUITS + ROUND SNACK BOXES SET OF 4 WOODLAND | 57.00 | 0.85 |
+| **4 - Loyal** | STRAWBERRY CERAMIC TRINKET BOX + STRAWBERRY CERAMIC TRINKET POT | 60.00 | 0.91 |
+
+![Strategy Distribution](images/Req6_StrategyDistribution.png)
+
+**Giải thích biểu đồ Req6_StrategyDistribution.png:**
+
+Pie chart thể hiện phân bố các loại chiến lược marketing được áp dụng cho 5 clusters của V4:
+
+- **Màu sắc và tỷ lệ**:
+  - **Loyalty Program & Upsell Premium** (xanh dương, ~40%): Áp dụng cho 2 clusters Loyal (Cluster 3 và 4) - chiến lược giữ chân và nâng cấp khách hàng trung thành.
+  - **Mass Cross-sell & Bundle Promotion** (xanh lá, ~20%): Áp dụng cho Cluster 0 (Mainstream) - chiến lược khuyến mãi đại trà cho nhóm khách phổ thông.
+  - **VIP Exclusive & Luxury Experience** (vàng, ~20%): Áp dụng cho Cluster 1 (Champion VIP) - chiến lược chăm sóc đặc biệt cho khách VIP.
+  - **Engagement & Second Purchase Push** (đỏ, ~20%): Áp dụng cho Cluster 2 (Recent Active) - chiến lược thúc đẩy đơn hàng thứ 2 cho khách mới.
+
+- **Ý nghĩa**: Biểu đồ cho thấy sự đa dạng trong chiến lược marketing, mỗi segment có approach riêng phù hợp với đặc điểm hành vi của nhóm đó. Loyalty chiếm tỷ trọng lớn nhất do có 2 clusters thuộc phân khúc này.
+
+#### 6.6. Bảng tổng hợp Profile hoàn chỉnh (V4_Antecedent2)
+
+| Cluster | Name_EN | Segment_Type | N_Customers | Pct (%) | R_Mean | F_Mean | M_Mean | Strategy_Type |
+|---------|---------|--------------|-------------|---------|--------|--------|--------|---------------|
+| 0 | Mainstream Casual Buyers | Mainstream | 3,339 | 85.2 | 101.2 | 3.6 | 1,563 | Mass Cross-sell & Bundle Promotion |
+| 1 | Champion Super VIP | Champion | 124 | 3.2 | 60.5 | 21.3 | 17,366 | VIP Exclusive & Luxury Experience |
+| 2 | Recent Active Buyers | Recent | 133 | 3.4 | 26.4 | 7.2 | 3,023 | Engagement & Second Purchase Push |
+| 3 | Loyal High-Value | Loyal | 202 | 5.2 | 39.3 | 6.8 | 2,985 | Loyalty Program & Upsell Premium |
+| 4 | Loyal High-Value | Loyal | 123 | 3.1 | 37.1 | 8.6 | 5,258 | Loyalty Program & Upsell Premium |
+
+![Cluster Profile Summary](images/Req6_ClusterProfileSummary.png)
+
+**Giải thích biểu đồ Req6_ClusterProfileSummary.png:**
+
+Biểu đồ gồm 3 bar charts so sánh giá trị RFM trung bình giữa 5 clusters của V4:
+
+- **Recency (trái)** - "Lower = Better":
+  - 5 cột màu khác nhau (xanh lá, đỏ, xanh dương, vàng, tím) cho clusters 0-4
+  - Cluster 0 (Mainstream) có R cao nhất = 101 ngày → Khách không active
+  - Cluster 2 (Recent) có R thấp nhất = 26 ngày → Khách vừa mua gần đây
+  - Clusters 3, 4 (Loyal) có R = 37-39 ngày → Khách hoạt động thường xuyên
+  - Cluster 1 (Champion) có R = 60 ngày → VIP vẫn active nhưng không phải gần đây nhất
+
+- **Frequency (giữa)** - "Higher = Better":
+  - Cluster 1 (Champion) nổi bật với F = 21.3 đơn → Mua rất nhiều
+  - Cluster 4 có F = 8.6 đơn → Loyal cao cấp
+  - Cluster 0 có F thấp nhất = 3.6 đơn → Casual buyers
+  - Sự chênh lệch rõ rệt giữa VIP (21.3) và Mainstream (3.6) là 6x
+
+- **Monetary (phải)** - "Higher = Better":
+  - Cluster 1 (Champion) vượt trội với M = 17,366 GBP → Super VIP
+  - Cluster 4 có M = 5,258 GBP → Loyal cao cấp
+  - Cluster 0 có M thấp nhất = 1,563 GBP → Chi tiêu thấp
+  - Sự chênh lệch giữa VIP và Mainstream là 11x
+
+**Kết luận từ biểu đồ**: Phân cụm V4 tạo ra 5 nhóm có profile RFM khác biệt rõ ràng, từ đó có thể áp dụng chiến lược marketing phù hợp cho từng nhóm.
+
+### 💡 Nhận xét tổng hợp
+
+1. **V4_Antecedent2 là cấu hình tốt nhất cho marketing** vì:
+   - 5 cụm với kích thước và đặc điểm khác biệt rõ ràng
+   - Có thể xây dựng 5 chiến lược marketing riêng biệt
+   - Silhouette score = 0.8091 (Excellent)
+
+2. **Phân khúc khách hàng có ý nghĩa**:
+   - **85.2%** là Mainstream → Cần chiến dịch mass marketing, bundle promotion
+   - **3.2%** là Champion → Cần chăm sóc VIP, exclusive experience
+   - **3.4%** là Recent → Cần nurture để chuyển thành loyal
+   - **8.3%** là Loyal → Cần loyalty program, upsell premium
+
+3. **Chiến lược liên kết trực tiếp với đặc trưng cụm**:
+   - Bundle recommendations dựa trên association rules có Lift cao
+   - KPI targets cụ thể cho từng segment
+   - Channel và timing phù hợp với hành vi của từng nhóm
+
+### 💾 Files output
+
+**Biểu đồ:**
+- `images/Req6_ClusterDistribution.png` - Phân bố khách hàng theo cụm
+- `images/Req6_RFMByCluster_V1_Binary.png` - RFM analysis cho V1
+- `images/Req6_RFMByCluster_V2_Weighted.png` - RFM analysis cho V2
+- `images/Req6_RFMByCluster_V3_Binary_RFM.png` - RFM analysis cho V3
+- `images/Req6_RFMByCluster_V4_Antecedent2.png` - RFM analysis cho V4
+- `images/Req6_RuleActivationHeatmap.png` - Heatmap luật kết hợp theo cụm
+- `images/Req6_StrategyDistribution.png` - Phân bố chiến lược marketing
+- `images/Req6_ClusterProfileSummary.png` - Tổng hợp profile cụm
+
+**Dữ liệu:**
+- `data/mini_project/cluster_rfm_stats.csv` - Thống kê RFM theo cụm
+- `data/mini_project/cluster_marketing_strategies.csv` - Chiến lược marketing
+- `data/mini_project/cluster_profiles_all_variants.csv` - Profile tất cả variants
+
+---
+
 ## Cài đặt và Chạy
 
 ### Yêu cầu môi trường
