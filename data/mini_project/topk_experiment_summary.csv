@@ -1,0 +1,9 @@
+Metric,Value
+Best TopK by Silhouette,50
+Best TopK by Coverage,200
+Best TopK by Composite,50
+Selected TopK,200
+TopK=200 Silhouette,0.2228
+TopK=200 Coverage,56.8%
+TopK=200 Min Lift,20.04
+TopK=200 Composite Rank,#1

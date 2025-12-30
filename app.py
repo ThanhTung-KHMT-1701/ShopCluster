@@ -556,6 +556,8 @@ elif menu == "📈 Chiến Lược Marketing":
     
     try:
         df_strategies = load_marketing_strategies()
+        df_profiles = load_cluster_profiles()
+        df_customers = load_customer_clusters()
         
         # Filter theo Segment Type
         segment_types = ['Tất cả'] + df_strategies['Segment_Type'].unique().tolist()
@@ -566,6 +568,45 @@ elif menu == "📈 Chiến Lược Marketing":
         else:
             df_filtered = df_strategies
         
+        st.markdown("---")
+        
+        # Hiển thị danh sách K khách hàng thuộc Segment Type đã chọn
+        st.subheader("👥 Khách hàng theo Segment Type")
+        k_customers = st.number_input("Số lượng khách hàng (K)", min_value=1, max_value=1000, value=10, step=1)
+        
+        try:
+            if selected_segment != 'Tất cả':
+                # Lấy danh sách cluster thuộc Segment Type đã chọn
+                # Ưu tiên dùng profiles để đảm bảo mapping Cluster -> Segment_Type
+                clusters_for_segment = df_profiles.loc[
+                    df_profiles['Segment_Type'] == selected_segment, 'Cluster'
+                ].dropna().unique().tolist()
+            else:
+                clusters_for_segment = df_profiles['Cluster'].dropna().unique().tolist()
+
+            # Lọc khách hàng theo các cụm tương ứng
+            df_segment_customers = df_customers[df_customers['Cluster'].isin(clusters_for_segment)].copy()
+
+            # Loại bỏ giá trị ID không hợp lệ nếu có (ví dụ '000nan')
+            df_segment_customers['CustomerID'] = df_segment_customers['CustomerID'].astype(str)
+            df_segment_customers = df_segment_customers[
+                df_segment_customers['CustomerID'].str.match(r'^\d+$')
+            ]
+
+            # Lấy K khách hàng đầu tiên
+            df_show_customers = df_segment_customers.head(int(k_customers))
+
+            # Hiển thị bảng khách hàng
+            if len(df_show_customers) > 0:
+                st.dataframe(df_show_customers.rename(columns={
+                    'CustomerID': 'Customer ID',
+                    'Cluster': 'Cluster'
+                }))
+            else:
+                st.info("Không tìm thấy khách hàng cho Segment Type đã chọn.")
+        except Exception as e:
+            st.warning(f"Không thể hiển thị danh sách khách hàng: {e}")
+
         st.markdown("---")
         
         # Hiển thị bảng chiến lược
