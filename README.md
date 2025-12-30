@@ -1283,6 +1283,219 @@ ShopCluster/
 
 ---
 
+## C. Bổ sung
+
+Phần này trình bày các thử nghiệm bổ sung nhằm củng cố và mở rộng kết quả của dự án:
+1. **Thử nghiệm giá trị TopK** - Chứng minh TopK = 200 là lựa chọn hợp lý
+2. **So sánh K-Means và DBSCAN** - Đánh giá thuật toán phân cụm thay thế
+
+---
+
+### 1. Thử nghiệm giá trị TopK hợp lý
+
+#### 1.1 Mục tiêu
+Xác định giá trị TopK tối ưu cho việc chọn số luật kết hợp làm đầu vào cho phân cụm, cân bằng giữa:
+- **Chất lượng luật** (Lift, Confidence cao)
+- **Độ phủ khách hàng** (Coverage)
+- **Khả năng phân cụm** (Silhouette Score)
+
+#### 1.2 Các giá trị TopK thử nghiệm
+```
+TOPK_VALUES = [50, 100, 150, 200, 250, 300, 400, 500]
+```
+
+#### 1.3 Kết quả thử nghiệm
+
+![Thử nghiệm TopK](images/TopK_Experiment_Results.png)
+
+**Phân tích biểu đồ:**
+
+| TopK | Avg Lift | Min Lift | Avg Confidence | Coverage | Sparsity | Avg Features/Customer | Best K | Best Silhouette | Silhouette(K=5) |
+|------|----------|----------|----------------|----------|----------|----------------------|--------|-----------------|-----------------|
+| **50** | 71.32 | 69.03 | 90.38% | 3.5% | 97.20% | 1.40 | 7 | **0.906** | 0.846 |
+| **100** | 58.42 | 34.22 | 82.80% | 29.6% | 97.47% | 2.53 | 2 | 0.689 | 0.263 |
+| **150** | 48.66 | 26.20 | 75.61% | 49.1% | 96.81% | 4.79 | 2 | 0.592 | 0.277 |
+| **200** | 42.19 | 20.04 | 72.97% | **56.8%** | 96.88% | 6.24 | 2 | 0.559 | 0.223 |
+| 250-500 | 42.19 | 20.04 | 72.97% | 56.8% | 96.88% | 6.24 | 2 | 0.559 | 0.223 |
+
+**Quan sát quan trọng:**
+1. **TopK = 50**: Silhouette rất cao (0.906) nhưng Coverage chỉ 3.5% - chỉ phân cụm được 136/3,921 khách hàng
+2. **TopK = 100-150**: Coverage tăng lên 29-49% nhưng Silhouette giảm mạnh
+3. **TopK = 200**: Điểm bão hòa - Coverage đạt 56.8% (2,228 khách hàng), tăng thêm TopK không cải thiện
+4. **TopK > 200**: Không có thêm luật thỏa điều kiện lọc (min_support=0.01, min_confidence=0.3, min_lift=1.5)
+
+#### 1.4 Phân tích Trade-off
+
+| Chỉ số | TopK=50 | TopK=200 | Nhận xét |
+|--------|---------|----------|----------|
+| **Avg Lift** | 71.32 | 42.19 | TopK=50 cao hơn 69% |
+| **Coverage** | 3.5% | 56.8% | TopK=200 cao hơn **16 lần** |
+| **Meaningful Clusters** | 5 | 5 | Tương đương |
+| **Business Value** | Thấp | **Cao** | TopK=200 phủ nhiều khách hàng hơn |
+
+#### 1.5 Kết luận chọn TopK = 200
+
+**Lý do chọn TopK = 200:**
+
+1. ✅ **Độ phủ cao nhất**: 56.8% khách hàng được cover (2,228/3,921)
+2. ✅ **Điểm bão hòa tự nhiên**: Tăng TopK > 200 không có thêm luật đủ điều kiện
+3. ✅ **Chất lượng luật vẫn đảm bảo**: Min Lift = 20.04 (vẫn là liên kết mạnh)
+4. ✅ **Giá trị thực tiễn**: Có thể đề xuất marketing cho đa số khách hàng
+5. ✅ **Cân bằng tốt**: Trade-off hợp lý giữa chất lượng và số lượng
+
+**Kết luận**: TopK = 200 là giá trị **tối ưu** cho bài toán này, đạt được sự cân bằng tốt nhất giữa chất lượng luật và độ phủ khách hàng.
+
+---
+
+### 2. Thử nghiệm với thuật toán DBSCAN
+
+#### 2.1 Mục tiêu
+
+So sánh hiệu quả phân cụm giữa **K-Means (V4, K=5)** và **DBSCAN** trên feature matrix V4 (200 luật) dựa trên:
+- Các metrics thống kê: Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Index
+- Mức độ "Actionable" - khả năng áp dụng vào thực tế marketing
+
+#### 2.2 Tìm tham số tối ưu cho DBSCAN
+
+![Tìm tham số DBSCAN](images/DBSCAN_ParameterSearch.png)
+
+**Phân tích biểu đồ:**
+
+**Biểu đồ trái - K-Distance Graph:**
+- Hiển thị khoảng cách đến k-nearest neighbors (k=min_samples)
+- Điểm uốn (elbow point) xác định giá trị eps phù hợp
+- Suggested eps ≈ 0.15 từ second derivative
+
+**Biểu đồ phải - Grid Search:**
+- Thử nghiệm các cặp (eps, min_samples)
+- eps ∈ [0.05, 0.10, 0.15, 0.20, 0.25]
+- min_samples ∈ [3, 5, 7, 10]
+- Đánh giá theo Silhouette Score (cao hơn = tốt hơn)
+
+**Kết quả Grid Search:**
+
+| eps | min_samples | Silhouette | Số cụm | Noise % |
+|-----|-------------|------------|--------|---------|
+| 0.05 | 3 | -0.15 | 2 | 97.8% |
+| 0.10 | 5 | 0.42 | 3 | 45.2% |
+| **0.15** | **5** | **0.48** | **2** | **23.1%** |
+| 0.20 | 5 | 0.39 | 1 | 12.5% |
+
+**Tham số tối ưu được chọn**: eps = 0.15, min_samples = 5
+
+#### 2.3 So sánh Metrics
+
+![So sánh K-Means vs DBSCAN](images/KMeans_vs_DBSCAN_Comparison.png)
+
+**Phân tích biểu đồ:**
+
+**Biểu đồ 1 - Silhouette Score (Higher is better):**
+- K-Means: **0.223** 
+- DBSCAN: **0.484**
+- DBSCAN cao hơn 117% → phân tách cụm rõ ràng hơn
+
+**Biểu đồ 2 - Davies-Bouldin Index (Lower is better):**
+- K-Means: **1.53**
+- DBSCAN: **0.82**
+- DBSCAN thấp hơn 46% → cụm compact hơn
+
+**Biểu đồ 3 - Calinski-Harabasz Index (Higher is better):**
+- K-Means: **341.2**
+- DBSCAN: **587.8**
+- DBSCAN cao hơn 72% → separation tốt hơn
+
+**Biểu đồ 4 - Cluster Visualization (PCA 2D):**
+- K-Means: 5 cụm với kích thước khác nhau
+- DBSCAN: 2 cụm chính + noise points (màu đen)
+
+#### 2.4 Đánh giá mức độ "Actionable"
+
+Ngoài metrics thống kê, cần đánh giá khả năng áp dụng thực tế cho marketing:
+
+**K-Means - RFM Statistics by Cluster:**
+
+| Cluster | N_Customers | R_Mean | F_Mean | M_Mean | Pct |
+|---------|-------------|--------|--------|--------|-----|
+| 0 | 297 | 28.26 | 5.81 | 2,112 | 13.3% |
+| 1 | 124 | 60.54 | 21.30 | 17,365 | 5.6% |
+| 2 | 251 | 38.34 | 6.10 | 3,043 | 11.3% |
+| 3 | 1,443 | 79.40 | 4.70 | 1,990 | **64.8%** |
+| 4 | 113 | 51.91 | 10.61 | 6,073 | 5.1% |
+
+**DBSCAN - RFM Statistics by Cluster:**
+
+| Cluster | N_Customers | R_Mean | F_Mean | M_Mean | Pct |
+|---------|-------------|--------|--------|--------|-----|
+| 0 | 1,672 | 74.64 | 4.41 | 1,900 | 75.0% |
+| 1 | 41 | 99.80 | 4.66 | 1,703 | 1.8% |
+| Noise | 515 | - | - | - | 23.1% |
+
+**Điểm Actionable Score:**
+
+| Metric | K-Means | DBSCAN |
+|--------|---------|--------|
+| **Meaningful Clusters (>1%)** | 5 | 2 |
+| **RFM Discrimination (CV)** | 0.718 | 0.107 |
+| **Coverage** | 100% | 76.9% |
+| **Cluster Balance (Entropy)** | 0.688 | 0.163 |
+| **TOTAL ACTIONABLE SCORE** | **0.853** | **0.357** |
+
+#### 2.5 Kết luận và Khuyến nghị
+
+![Final Verdict](images/KMeans_vs_DBSCAN_FinalVerdict.png)
+
+**Phân tích biểu đồ:**
+
+**Biểu đồ trái - Radar Chart (Normalized Metrics):**
+- Hiển thị 5 metrics đã chuẩn hóa [0-1]
+- DBSCAN (đỏ) chiếm ưu thế về Silhouette, DBI, CH
+- K-Means (xanh) chiếm ưu thế về Coverage và Balance
+
+**Biểu đồ phải - Final Verdict:**
+- **K-Means Actionable Score: 0.853**
+- **DBSCAN Actionable Score: 0.357**
+- K-Means cao hơn **139%** về mức độ Actionable
+
+#### 2.6 Tổng kết
+
+| Tiêu chí | K-Means (V4, K=5) | DBSCAN | Winner |
+|----------|-------------------|--------|--------|
+| Silhouette Score | 0.223 | **0.484** | DBSCAN |
+| Davies-Bouldin Index | 1.53 | **0.82** | DBSCAN |
+| Calinski-Harabasz | 341.2 | **587.8** | DBSCAN |
+| Số cụm có ý nghĩa | **5** | 2 | K-Means |
+| Coverage | **100%** | 76.9% | K-Means |
+| RFM Discrimination | **0.718** | 0.107 | K-Means |
+| Cluster Balance | **0.688** | 0.163 | K-Means |
+| **Actionable Score** | **0.853** | 0.357 | **K-Means** |
+
+**Kết luận:**
+- **DBSCAN** thắng về mặt **thống kê** (Silhouette, DBI, CH)
+- **K-Means (V4, K=5)** thắng về mặt **ứng dụng thực tế** (Coverage, Balance, Discrimination)
+
+**Khuyến nghị:**
+> 🏆 **Chọn K-Means (V4, K=5)** cho bài toán phân khúc khách hàng vì:
+> 1. **Coverage 100%** - Không bỏ sót khách hàng nào
+> 2. **5 cụm đa dạng** - Đủ chi tiết để tạo 5 chiến lược marketing khác biệt
+> 3. **RFM discrimination cao** - Phân biệt rõ ràng hành vi khách hàng giữa các cụm
+> 4. **Actionable Score 0.853** - Khả năng áp dụng thực tế cao
+
+---
+
+### 💾 Files output (Phần bổ sung)
+
+**Biểu đồ:**
+- `images/TopK_Experiment_Results.png` - Kết quả thử nghiệm TopK
+- `images/DBSCAN_ParameterSearch.png` - Tìm tham số DBSCAN
+- `images/KMeans_vs_DBSCAN_Comparison.png` - So sánh metrics
+- `images/KMeans_vs_DBSCAN_FinalVerdict.png` - Kết luận cuối cùng
+
+**Dữ liệu:**
+- `data/mini_project/topk_experiment_results.csv` - Kết quả chi tiết TopK
+- `data/mini_project/topk_experiment_summary.csv` - Tóm tắt TopK
+
+---
+
 ## Tác giả
 
 - **Nhóm**: 09
