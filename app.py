@@ -82,7 +82,8 @@ menu = st.sidebar.radio(
         "🎨 Feature Engineering",
         "🔬 Kết quả Clustering",
         "👥 Phân Khúc Khách Hàng",
-        "📈 Chiến Lược Marketing"
+        "📈 Chiến Lược Marketing",
+        "📊 Bổ sung"
     ]
 )
 
@@ -650,6 +651,233 @@ elif menu == "📈 Chiến Lược Marketing":
         
     except Exception as e:
         st.error(f"Lỗi load dữ liệu: {e}")
+
+# =============================================================================
+# TAB 7: BỔ SUNG - THỬ NGHIỆM TOPK VÀ DBSCAN
+# =============================================================================
+elif menu == "📊 Bổ sung":
+    st.title("📊 C. Bổ sung")
+    st.markdown("### Thử nghiệm bổ sung: TopK và So sánh thuật toán DBSCAN")
+    
+    st.markdown("---")
+    
+    # Sub-tabs
+    sub_tab = st.radio(
+        "📌 Chọn nội dung:",
+        ["1️⃣ Thử nghiệm TopK", "2️⃣ So sánh K-Means vs DBSCAN"],
+        horizontal=True
+    )
+    
+    st.markdown("---")
+    
+    # ==========================================================================
+    # SUB-TAB 1: THỬ NGHIỆM TOPK
+    # ==========================================================================
+    if sub_tab == "1️⃣ Thử nghiệm TopK":
+        st.subheader("🔬 Thử nghiệm giá trị TopK hợp lý")
+        
+        st.markdown("""
+        **Mục tiêu:** Xác định giá trị TopK tối ưu cho việc chọn số luật kết hợp làm đầu vào cho phân cụm.
+        
+        **Các tiêu chí đánh giá:**
+        - Chất lượng luật (Lift, Confidence)
+        - Độ phủ khách hàng (Coverage)
+        - Khả năng phân cụm (Silhouette Score)
+        """)
+        
+        st.markdown("---")
+        
+        # Hiển thị bảng kết quả
+        st.markdown("#### 📋 Kết quả thử nghiệm các giá trị TopK")
+        
+        try:
+            df_topk = pd.read_csv(f"{DATA_DIR}/topk_experiment_results.csv")
+            
+            # Định dạng hiển thị
+            df_display = df_topk[['TopK', 'Avg_Lift', 'Min_Lift', 'Avg_Confidence', 'Coverage', 'Best_Silhouette', 'Silhouette_K5']].copy()
+            df_display['Avg_Lift'] = df_display['Avg_Lift'].round(2)
+            df_display['Min_Lift'] = df_display['Min_Lift'].round(2)
+            df_display['Avg_Confidence'] = (df_display['Avg_Confidence'] * 100).round(1).astype(str) + '%'
+            df_display['Coverage'] = (df_display['Coverage'] * 100).round(1).astype(str) + '%'
+            df_display['Best_Silhouette'] = df_display['Best_Silhouette'].round(3)
+            df_display['Silhouette_K5'] = df_display['Silhouette_K5'].round(3)
+            
+            st.dataframe()
+            
+        except Exception as e:
+            st.info("Dữ liệu thử nghiệm TopK chưa có. Vui lòng chạy notebook phần C. Bổ sung.")
+        
+        st.markdown("---")
+        
+        # Hiển thị biểu đồ
+        st.markdown("#### 📈 Biểu đồ phân tích TopK")
+        
+        img_topk = load_image("TopK_Experiment_Results.png")
+        if img_topk:
+            st.image(img_topk, caption="Kết quả thử nghiệm các giá trị TopK", use_column_width=True)
+        else:
+            st.warning("Chưa có biểu đồ TopK_Experiment_Results.png")
+        
+        st.markdown("---")
+        
+        # Kết luận
+        st.markdown("#### ✅ Kết luận")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.success("""
+            **Chọn TopK = 200 vì:**
+            1. ✅ **Độ phủ cao nhất**: 56.8% khách hàng
+            2. ✅ **Điểm bão hòa tự nhiên**: TopK > 200 không thêm luật
+            3. ✅ **Min Lift = 20.04**: Vẫn là liên kết mạnh
+            4. ✅ **Giá trị thực tiễn cao**
+            """)
+        
+        with col2:
+            st.info("""
+            **Trade-off:**
+            - TopK=50: Silhouette cao (0.906) nhưng Coverage chỉ 3.5%
+            - TopK=200: Coverage 56.8%, Silhouette 0.223 (K=5)
+            - **Ưu tiên Coverage** cho marketing thực tế
+            """)
+    
+    # ==========================================================================
+    # SUB-TAB 2: SO SÁNH K-MEANS VS DBSCAN
+    # ==========================================================================
+    elif sub_tab == "2️⃣ So sánh K-Means vs DBSCAN":
+        st.subheader("🔬 So sánh K-Means và DBSCAN trên biến thể V4")
+        
+        st.markdown("""
+        **Mục tiêu:** So sánh hiệu quả phân cụm giữa **K-Means (V4, K=5)** và **DBSCAN** dựa trên:
+        - Metrics thống kê: Silhouette, Davies-Bouldin, Calinski-Harabasz
+        - Mức độ "Actionable" - khả năng áp dụng vào thực tế marketing
+        """)
+        
+        st.markdown("---")
+        
+        # 1. Tìm tham số DBSCAN
+        st.markdown("#### 🔍 Bước 1: Tìm tham số tối ưu cho DBSCAN")
+        
+        img_param = load_image("DBSCAN_ParameterSearch.png")
+        if img_param:
+            st.image(img_param, caption="K-Distance Graph và Grid Search cho DBSCAN", use_column_width=True)
+        else:
+            st.warning("Chưa có biểu đồ DBSCAN_ParameterSearch.png")
+        
+        st.info("""
+        **Kết quả Grid Search:**
+        - Tham số tối ưu: **eps = 0.15, min_samples = 5**
+        - Silhouette Score: 0.484
+        - Số cụm: 2 (+ noise points)
+        """)
+        
+        st.markdown("---")
+        
+        # 2. So sánh Metrics
+        st.markdown("#### 📊 Bước 2: So sánh Metrics")
+        
+        img_compare = load_image("KMeans_vs_DBSCAN_Comparison.png")
+        if img_compare:
+            st.image(img_compare, caption="So sánh K-Means vs DBSCAN", use_column_width=True)
+        else:
+            st.warning("Chưa có biểu đồ KMeans_vs_DBSCAN_Comparison.png")
+        
+        # Bảng so sánh metrics
+        st.markdown("##### 📋 Bảng so sánh chi tiết")
+        
+        metrics_data = {
+            'Metric': ['Silhouette Score ↑', 'Davies-Bouldin Index ↓', 'Calinski-Harabasz ↑', 'Số cụm có ý nghĩa', 'Coverage'],
+            'K-Means (V4, K=5)': ['0.223', '1.53', '341.2', '5', '100%'],
+            'DBSCAN': ['0.484', '0.82', '587.8', '2', '76.9%'],
+            'Winner': ['DBSCAN', 'DBSCAN', 'DBSCAN', 'K-Means', 'K-Means']
+        }
+        df_metrics = pd.DataFrame(metrics_data)
+        st.dataframe()
+        
+        st.markdown("---")
+        
+        # 3. Đánh giá Actionable
+        st.markdown("#### 🎯 Bước 3: Đánh giá mức độ 'Actionable'")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**K-Means - RFM by Cluster:**")
+            kmeans_rfm = {
+                'Cluster': [0, 1, 2, 3, 4],
+                'N': [297, 124, 251, 1443, 113],
+                'R_Mean': [28, 61, 38, 79, 52],
+                'F_Mean': [5.8, 21.3, 6.1, 4.7, 10.6],
+                'M_Mean': ['2,113', '17,366', '3,043', '1,990', '6,074']
+            }
+            st.dataframe()
+        
+        with col2:
+            st.markdown("**DBSCAN - RFM by Cluster:**")
+            dbscan_rfm = {
+                'Cluster': [0, 1, 'Noise'],
+                'N': [1672, 41, 515],
+                'R_Mean': [75, 100, '-'],
+                'F_Mean': [4.4, 4.7, '-'],
+                'M_Mean': ['1,900', '1,704', '-']
+            }
+            st.dataframe()
+        
+        st.markdown("---")
+        
+        # 4. Kết luận cuối cùng
+        st.markdown("#### 🏆 Bước 4: Kết luận và Khuyến nghị")
+        
+        img_verdict = load_image("KMeans_vs_DBSCAN_FinalVerdict.png")
+        if img_verdict:
+            st.image(img_verdict, caption="Final Verdict: K-Means vs DBSCAN", use_column_width=True)
+        else:
+            st.warning("Chưa có biểu đồ KMeans_vs_DBSCAN_FinalVerdict.png")
+        
+        # Actionable Score comparison
+        st.markdown("##### 📊 Điểm Actionable Score")
+        
+        actionable_data = {
+            'Metric': ['Meaningful Clusters (>1%)', 'RFM Discrimination (CV)', 'Coverage', 'Cluster Balance (Entropy)', 'TOTAL ACTIONABLE SCORE'],
+            'K-Means': ['5', '0.718', '100%', '0.688', '**0.853**'],
+            'DBSCAN': ['2', '0.107', '76.9%', '0.163', '**0.357**']
+        }
+        df_actionable = pd.DataFrame(actionable_data)
+        st.dataframe()
+        
+        st.markdown("---")
+        
+        # Final verdict
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.error("""
+            **DBSCAN thắng về thống kê:**
+            - Silhouette cao hơn 117%
+            - DBI thấp hơn 46%
+            - CH Index cao hơn 72%
+            """)
+        
+        with col2:
+            st.success("""
+            **K-Means thắng về ứng dụng:**
+            - Coverage 100% (không bỏ sót)
+            - 5 cụm đa dạng cho marketing
+            - Actionable Score cao hơn **139%**
+            """)
+        
+        st.markdown("---")
+        
+        st.info("""
+        ### 🏆 KHUYẾN NGHỊ: Chọn K-Means (V4, K=5)
+        
+        **Lý do:**
+        1. ✅ **Coverage 100%** - Không bỏ sót khách hàng nào
+        2. ✅ **5 cụm đa dạng** - Đủ chi tiết để tạo 5 chiến lược marketing khác biệt
+        3. ✅ **RFM discrimination cao (0.718)** - Phân biệt rõ ràng hành vi khách hàng
+        4. ✅ **Actionable Score 0.853** - Khả năng áp dụng thực tế cao
+        """)
 
 # =============================================================================
 # FOOTER
