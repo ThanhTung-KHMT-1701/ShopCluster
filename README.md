@@ -1,13 +1,34 @@
 # 🛒 Mini Project: Phân Cụm Khách Hàng Dựa Trên Luật Kết Hợp
 
-## Mục lục
-- [Giới thiệu](#giới-thiệu)
-- [Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
-- [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
-- [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
-- [Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)](#yêu-cầu-4-trực-quan-hóa-2d-pcasvd)
-- [Yêu cầu 5: So sánh có hệ thống các biến thể](#yêu-cầu-5-so-sánh-có-hệ-thống-các-biến-thể-đặc-trưng)
-- [Cài đặt và Chạy](#cài-đặt-và-chạy)
+## 📑 Mục lục
+
+1. [🎯 Giới thiệu](#giới-thiệu)
+2. [📦 Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
+   - 1.1. Thiết lập môi trường và tham số ban đầu
+   - 1.2. Khai thác luật kết hợp bằng FP-Growth
+   - 1.3. Khảo sát ảnh hưởng của các tham số (Grid Search)
+   - 1.4. Phân tích Trade-off: Số lượng vs Chất lượng
+   - 1.5. Kết luận chọn tham số tối ưu
+   - 1.6. Áp dụng tham số và lọc luật
+3. [🔧 Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
+   - 2.1. Phương pháp xây dựng Feature Matrix
+   - 2.2. Thiết kế 4 biến thể Feature Matrix
+   - 2.3. So sánh các biến thể
+4. [🎯 Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
+   - 3.1. Phương pháp Elbow
+   - 3.2. Phương pháp Silhouette Score
+   - 3.3. Kết hợp Elbow + Silhouette + Davies-Bouldin
+   - 3.4. Quyết định chọn K tối ưu
+   - 3.5. Áp dụng K-Means clustering
+5. [📊 Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)](#yêu-cầu-4-trực-quan-hóa-2d-pcasvd)
+   - 4.1. PCA cho dữ liệu dense
+   - 4.2. SVD cho dữ liệu sparse
+   - 4.3. Trực quan hóa các cụm
+6. [⚖️ Yêu cầu 5: So sánh có hệ thống các biến thể](#yêu-cầu-5-so-sánh-có-hệ-thống-các-biến-thể-đặc-trưng)
+   - 5.1. Ma trận so sánh các biến thể
+   - 5.2. Phân tích profile từng cụm
+   - 5.3. Đề xuất chiến lược marketing
+7. [🚀 Cài đặt và Chạy](#cài-đặt-và-chạy)
 
 ---
 
