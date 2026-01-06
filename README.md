@@ -1,13 +1,34 @@
 # 🛒 Mini Project: Phân Cụm Khách Hàng Dựa Trên Luật Kết Hợp
 
-## Mục lục
-- [Giới thiệu](#giới-thiệu)
-- [Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
-- [Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
-- [Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
-- [Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)](#yêu-cầu-4-trực-quan-hóa-2d-pcasvd)
-- [Yêu cầu 5: So sánh có hệ thống các biến thể](#yêu-cầu-5-so-sánh-có-hệ-thống-các-biến-thể-đặc-trưng)
-- [Cài đặt và Chạy](#cài-đặt-và-chạy)
+## 📑 Mục lục
+
+1. [🎯 Giới thiệu](#giới-thiệu)
+2. [📦 Yêu cầu 1: Khai thác luật kết hợp](#yêu-cầu-1-khai-thác-luật-kết-hợp)
+   - 1.1. Thiết lập môi trường và tham số ban đầu
+   - 1.2. Khai thác luật kết hợp bằng FP-Growth
+   - 1.3. Khảo sát ảnh hưởng của các tham số (Grid Search)
+   - 1.4. Phân tích Trade-off: Số lượng vs Chất lượng
+   - 1.5. Kết luận chọn tham số tối ưu
+   - 1.6. Áp dụng tham số và lọc luật
+3. [🔧 Yêu cầu 2: Feature Engineering](#yêu-cầu-2-feature-engineering)
+   - 2.1. Phương pháp xây dựng Feature Matrix
+   - 2.2. Thiết kế 4 biến thể Feature Matrix
+   - 2.3. So sánh các biến thể
+4. [🎯 Yêu cầu 3: Phân cụm K-Means](#yêu-cầu-3-phân-cụm-k-means)
+   - 3.1. Phương pháp Elbow
+   - 3.2. Phương pháp Silhouette Score
+   - 3.3. Kết hợp Elbow + Silhouette + Davies-Bouldin
+   - 3.4. Quyết định chọn K tối ưu
+   - 3.5. Áp dụng K-Means clustering
+5. [📊 Yêu cầu 4: Trực quan hóa 2D (PCA/SVD)](#yêu-cầu-4-trực-quan-hóa-2d-pcasvd)
+   - 4.1. PCA cho dữ liệu dense
+   - 4.2. SVD cho dữ liệu sparse
+   - 4.3. Trực quan hóa các cụm
+6. [⚖️ Yêu cầu 5: So sánh có hệ thống các biến thể](#yêu-cầu-5-so-sánh-có-hệ-thống-các-biến-thể-đặc-trưng)
+   - 5.1. Ma trận so sánh các biến thể
+   - 5.2. Phân tích profile từng cụm
+   - 5.3. Đề xuất chiến lược marketing
+7. [🚀 Cài đặt và Chạy](#cài-đặt-và-chạy)
 
 ---
 
@@ -73,20 +94,7 @@ flowchart LR
 **Kết luận**: min_support là tham số ảnh hưởng mạnh nhất, cần chọn cẩn thận để cân bằng số lượng-chất lượng.
 
 #### 1.4. Phân tích Trade-off: Số lượng vs Chất lượng
-
-- Khảo sát **27 tổ hợp** tham số khác nhau
-- Sử dụng **Quality Score = avg_lift × avg_confidence** để đánh giá
-- Lọc các cấu hình có **50-500 luật** (phù hợp cho phân cụm)
-
-![Phân tích Trade-off](images/Req1_TradeoffAnalysis.png)
-
-**Phân tích biểu đồ:**
-- **Biểu đồ trái (Scatter)**: Mỗi điểm là một tổ hợp tham số. Trục X là số luật, trục Y là quality score. Màu xanh lá = lift cao, màu đỏ = lift thấp. Vùng giữa 2 đường đứt đỏ (50-500 luật) là vùng phù hợp cho phân cụm.
-- **Biểu đồ phải (Top 5)**: 5 cấu hình có quality score cao nhất trong vùng 50-500 luật:
-  - Cấu hình tốt nhất: sup=0.015, conf=0.4, lift=1.5 với 347 luật, quality_score=5.94
-  - Các cấu hình có confidence=0.4 cho quality score cao hơn confidence=0.3
-
-**Kết luận**: Chọn cấu hình cân bằng với min_support=0.01, min_confidence=0.3, min_lift=1.5 để có đủ luật (200) mà vẫn đảm bảo chất lượng.
+![Phân tích Trade-off](images/Req1_TopKRuleOnlySelection.png)
 
 #### 1.5. Kết luận chọn tham số tối ưu
 
@@ -114,8 +122,8 @@ Kết quả sau khi lọc:
 | Chỉ số | Min | Max | Mean |
 |--------|-----|-----|------|
 | **Support** | 0.0101 | 0.0204 | 0.0116 |
-| **Confidence** | 35.33% | 97.57% | **72.97%** |
-| **Lift** | 20.04 | 74.57 | **42.19** |
+| **Confidence** | 42.72% | 97.57% | **73.37%** |
+| **Lift** | 19.70 | 74.57 | **42.13** |
 
 #### Phân phối độ dài Antecedent
 - 1 sản phẩm: **139 luật (69.5%)**
@@ -186,9 +194,9 @@ Kết quả sau khi lọc:
 ![Phân phối Lift](images/Req1_LiftDistribution.png)
 
 **Phân tích dữ liệu từ biểu đồ:**
-- Phân phối Lift: từ **20** đến **75**
-- **Mean Lift = 42.19** (đường đỏ)
-- **Median Lift ≈ 40** (đường cam)
+- Phân phối Lift: từ **19.7** đến **74.6**
+- **Mean Lift = 42.13** (đường đỏ)
+- **Median Lift ≈ 34.0** (đường cam)
 - Phần lớn luật có Lift trong khoảng **25-50**
 - Có một nhóm nhỏ luật đặc biệt với Lift **>70** (outliers tích cực)
 
@@ -203,13 +211,13 @@ Kết quả sau khi lọc:
 
 | Metric | Min | Median | Max | Nhận xét |
 |--------|-----|--------|-----|----------|
-| **Support** | 0.0101 | ~0.011 | 0.0204 | Tập trung, ít outliers |
-| **Confidence** | 0.35 | ~0.75 | 0.98 | Range rộng, nhiều biến thiên |
-| **Lift** | 20.04 | ~40 | 74.57 | Có outliers cao |
+| **Support** | 0.0101 | ~0.0112 | 0.0204 | Tập trung, ít outliers |
+| **Confidence** | 0.43 | ~0.735 | 0.98 | Range rộng, nhiều biến thiên |
+| **Lift** | 19.70 | ~34.0 | 74.57 | Có outliers cao |
 
 **Ý nghĩa**: 
 - Support đồng đều → các luật xuất hiện với tần suất tương đương
-- Confidence đa dạng → có luật mạnh (>90%) và luật vừa (35-50%)
+- Confidence đa dạng → có luật mạnh (>90%) và luật vừa (~43-50%)
 - Lift cao đều → tất cả luật đều có liên kết mạnh
 
 ---
@@ -252,7 +260,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 | **V1_Binary** | 3,921 × 200 | Baseline binary (0/1) theo antecedent |
 | **V2_Weighted** | 3,921 × 200 | Weighted = lift × confidence |
 | **V3_Binary_RFM** | 3,921 × 203 | Binary + 3 cột RFM đã chuẩn hóa |
-| **V4_Antecedent2** | 3,921 × 63 | Binary, chỉ giữ luật có antecedent ≥ 2 |
+| **V4_Antecedent2** | 3,921 × 66 | Binary, chỉ giữ luật có antecedent ≥ 2 |
 
 #### 2.2. Chi tiết từng biến thể
 
@@ -262,7 +270,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 - Đơn giản, dễ hiểu, làm baseline để so sánh
 
 **V2_Weighted (Trọng số):**
-- Giá trị từ **7.45** đến **71.15** (khi khách kích hoạt luật)
+- Giá trị từ **9.47** đến **71.15** (khi khách kích hoạt luật)
 - Weight = lift × confidence → phản ánh "độ mạnh" của luật
 - Phân biệt được luật mạnh/yếu, không chỉ 0/1
 
@@ -272,7 +280,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 - **Được khuyến nghị cho clustering** vì kết hợp cả hành vi mua kèm VÀ giá trị khách hàng
 
 **V4_Antecedent2 (Lọc luật phức tạp):**
-- Chỉ giữ **63 luật** có antecedent ≥ 2 sản phẩm (giảm 68.5% so với V1)
+- Chỉ giữ **66 luật** có antecedent ≥ 2 sản phẩm (giảm 67.0% so với V1)
 - Tập trung vào pattern mua kèm phức tạp
 
 #### 2.3. Tính RFM cho khách hàng
@@ -289,10 +297,10 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 
 | Biến thể | Sparsity | Avg Activation | Features Used |
 |----------|----------|----------------|---------------|
-| V1_Binary | 96.88% | 3.12% | 166/200 (83%) |
-| V2_Weighted | 96.88% | 3.12% | 166/200 (83%) |
-| V3_Binary_RFM | 95.45% | 3.45% | 169/203 (83.3%) |
-| V4_Antecedent2 | 97.92% | 2.08% | 50/63 (79.4%) |
+| V1_Binary | 96.90% | 3.10% | 165/200 (83.0%) |
+| V2_Weighted | 96.90% | 3.10% | 165/200 (83.0%) |
+| V3_Binary_RFM | 95.47% | 3.42% | 168/203 (82.8%) |
+| V4_Antecedent2 | 97.93% | 2.07% | 51/66 (77.3%) |
 
 **Nhận xét:**
 - V1, V2, V3 có cùng 200 luật nên activation rate giống nhau
@@ -306,9 +314,9 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 ![So sánh 4 biến thể](images/Req2_FeatureVariantComparison.png)
 
 **Phân tích biểu đồ:**
-- **Biểu đồ trái (Features/Customers)**: V1, V2 có 200 features, V3 có 203 (thêm RFM), V4 chỉ 63
-- **Biểu đồ giữa (Sparsity)**: V3 thấp nhất (95.45%), V4 cao nhất (97.92%)
-- **Biểu đồ phải (Value Range)**: V2 có range rộng nhất (7.45-71.15), V1/V4 chỉ 0-1
+- **Biểu đồ trái (Features/Customers)**: V1, V2 có 200 features, V3 có 203 (thêm RFM), V4 chỉ 66
+- **Biểu đồ giữa (Sparsity)**: V3 thấp nhất (95.47%), V4 cao nhất (97.93%)
+- **Biểu đồ phải (Value Range)**: V2 có range rộng nhất (9.47-71.15), V1/V4 chỉ 0-1
 
 ---
 
@@ -319,7 +327,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 **Phân tích biểu đồ:**
 - **Scatter Plot (trái)**: Mỗi điểm = 1 rule, 4 màu cho 4 biến thể
   - V1, V2, V3 có pattern giống nhau (cùng bộ 200 luật)
-  - V4 có ít điểm hơn (63 rules) và activation rate thấp hơn
+- V4 có ít điểm hơn (66 rules) và activation rate thấp hơn
 - **Box Plot (phải)**: 
   - V1-V3: Median ≈ 3.21%, có outliers lên đến 8.37%
   - V4: Median ≈ 2.93%, max 6.15%
@@ -331,7 +339,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 | V1 Binary | 200 | 0.00% | 8.37% | 3.12% | 3.21% |
 | V2 Weighted | 200 | 0.00% | 8.37% | 3.12% | 3.21% |
 | V3 Binary+RFM | 200* | 0.00% | 8.37% | 3.12% | 3.21% |
-| V4 Ant≥2 | 63 | 0.00% | 6.15% | 2.08% | 2.93% |
+| V4 Ant≥2 | 66 | 0.00% | 6.15% | 2.07% | 2.93% |
 
 *V3 tính activation rate chỉ cho 200 rule features, không tính 3 cột RFM
 
@@ -362,7 +370,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 
 **Khuyến nghị:** Sử dụng **V3 (Binary + RFM)** cho bước clustering vì:
 1. Kết hợp cả hành vi mua kèm (200 rules) và giá trị khách hàng (RFM)
-2. Sparsity thấp nhất (95.45%) → clustering ổn định hơn
+2. Sparsity thấp nhất (95.47%) → clustering ổn định hơn
 3. RFM giúp phân biệt khách VIP vs thông thường
 4. Phù hợp cho chiến lược marketing đa chiều
 
@@ -372,7 +380,7 @@ Luật đã lọc được lưu tại: `data/mini_project/rules_fpgrowth_filtere
 - `data/mini_project/feature_matrix_v1_binary.csv` (3,921 × 201)
 - `data/mini_project/feature_matrix_v2_weighted.csv` (3,921 × 201)
 - `data/mini_project/feature_matrix_v3_binary_rfm.csv` (3,921 × 204)
-- `data/mini_project/feature_matrix_v4_antecedent2.csv` (3,921 × 64)
+- `data/mini_project/feature_matrix_v4_antecedent2.csv` (3,921 × 67)
 
 **Dữ liệu bổ trợ:**
 - `data/mini_project/rfm_data.csv` (3,922 × 4)
@@ -433,10 +441,10 @@ Inertia_norm = (Inertia - Inertia_min) / (Inertia_max - Inertia_min)
 
 **Phân tích biểu đồ:**
 - **Line Plot (trái)**: Silhouette theo K cho 4 variants
-  - V3_Binary_RFM đạt Silhouette cao nhất tại K=2 (0.9622) nhưng giảm mạnh khi K tăng
-  - V4_Antecedent2 ổn định nhất, Silhouette ~0.80-0.83 trong khoảng K=2-12
-  - V2_Weighted giảm dần từ 0.89 (K=2) xuống 0.50 (K=12)
-  - V1_Binary giảm từ 0.70 (K=2) xuống 0.41 (K=12)
+  - V3_Binary_RFM đạt Silhouette cao nhất tại K=2 (0.9623) nhưng giảm mạnh khi K tăng
+  - V4_Antecedent2 ổn định trong khoảng ~0.78-0.89 khi K thay đổi
+  - V2_Weighted giảm dần từ 0.892 (K=2) xuống ~0.51 khi K tăng
+  - V1_Binary giảm từ 0.705 (K=2) xuống ~0.48 khi K tăng
 
 - **Heatmap (phải)**: Màu càng đậm = Silhouette càng cao
   - Cột V3_Binary_RFM có màu đậm nhất tại K=2
@@ -446,11 +454,11 @@ Inertia_norm = (Inertia - Inertia_min) / (Inertia_max - Inertia_min)
 
 | K | V1_Binary | V2_Weighted | V3_Binary_RFM | V4_Antecedent2 |
 |---|-----------|-------------|---------------|----------------|
-| 2 | 0.7039 | 0.8920 | **0.9622** | 0.8998 |
-| 3 | 0.5078 | 0.5889 | 0.6425 | 0.8000 |
-| 4 | 0.5074 | 0.5825 | 0.2004 | 0.7932 |
-| 5 | 0.4769 | 0.5501 | 0.2400 | **0.8091** |
-| 6 | 0.4792 | 0.5724 | 0.2556 | 0.8072 |
+| 2 | 0.7050 | 0.8920 | **0.9623** | 0.8927 |
+| 3 | 0.5086 | 0.5889 | 0.6435 | 0.7840 |
+| 4 | 0.5081 | 0.6037 | 0.2013 | 0.8063 |
+| 5 | 0.4930 | 0.5109 | 0.2408 | 0.7895 |
+| 6 | 0.4805 | 0.5107 | 0.2614 | 0.8001 |
 
 #### 3.4. Smart Auto K Selection
 
@@ -464,7 +472,7 @@ Thay vì chỉ chọn K có Silhouette cao nhất, sử dụng cơ chế **Smart
 **Tiêu chí 2 - Ưu tiên K > 2:**
 - K=2 thường ít ý nghĩa marketing (chỉ chia 2 nhóm)
 - Nếu K>2 có Silhouette chỉ thấp hơn ≤ 20%, ưu tiên chọn K>2
-- V4_Antecedent2: K=5 (Sil=0.8091) được chọn thay K=2 (Sil=0.8998) vì chênh 10.07%
+- V4_Antecedent2: K=4 (Sil=0.8063) được chọn thay K=2 (Sil=0.8927) vì chênh ~9.7%
 
 **Tiêu chí 3 - Fallback:**
 - Nếu không có K hợp lệ, chọn K=2 làm mặc định
@@ -474,7 +482,7 @@ Thay vì chỉ chọn K có Silhouette cao nhất, sử dụng cơ chế **Smart
 **Phân tích biểu đồ:**
 - So sánh K được chọn và Silhouette tương ứng cho 4 variants
 - V1, V2, V3 chọn K=2 (không có K>2 nào đủ tốt)
-- V4 chọn K=5 (ưu tiên K>2 vì chênh lệch < 20%)
+- V4 chọn K=4 (ưu tiên K>2 vì chênh lệch < 20%)
 
 #### 3.5. Huấn luyện K-Means và kết quả
 
@@ -482,32 +490,31 @@ Thay vì chỉ chọn K có Silhouette cao nhất, sử dụng cơ chế **Smart
 
 | Variant | K | Silhouette | Đánh giá | Phân bố Cluster |
 |---------|---|------------|----------|-----------------|
-| **V1_Binary** | 2 | 0.7039 | Excellent | C0: 96.8%, C1: 3.2% |
+| **V1_Binary** | 2 | 0.7050 | Excellent | C0: 96.8%, C1: 3.2% |
 | **V2_Weighted** | 2 | 0.8920 | Excellent | C0: 96.8%, C1: 3.2% |
-| **V3_Binary_RFM** | 2 | 0.9622 | Excellent* | C0: 100%, C1: 0.03% |
-| **V4_Antecedent2** | 5 | 0.8091 | Excellent | C0: 85.2%, C1-4: 3-5% mỗi |
+| **V3_Binary_RFM** | 2 | 0.9623 | Excellent* | C0: 100%, C1: 0.0% |
+| **V4_Antecedent2** | 4 | 0.8063 | Excellent | C0: 90.6%, C1-3: 2.8-3.4% |
 
 *⚠️ V3 có Silhouette cao giả tạo do 1 outlier cực mạnh trong RFM
 
-**Chi tiết phân bố V4_Antecedent2 (K=5):** ✅ **Khuyến nghị**
+**Chi tiết phân bố V4_Antecedent2 (K=4):** ✅ **Khuyến nghị**
 
 | Cluster | Số KH | Tỷ lệ | Đặc điểm |
 |---------|-------|-------|----------|
-| 0 | 3,339 | 85.2% | Nhóm chính |
+| 0 | 3,554 | 90.6% | Nhóm chính |
 | 1 | 124 | 3.2% | Nhóm hành vi đặc biệt 1 |
-| 2 | 133 | 3.4% | Nhóm hành vi đặc biệt 2 |
-| 3 | 202 | 5.2% | Nhóm hành vi đặc biệt 3 |
-| 4 | 123 | 3.1% | Nhóm hành vi đặc biệt 4 |
+| 2 | 110 | 2.8% | Nhóm hành vi đặc biệt 2 |
+| 3 | 133 | 3.4% | Nhóm hành vi đặc biệt 3 |
 
 ### 💡 Kết luận và Khuyến nghị
 
-#### Biến thể tốt nhất: **V4_Antecedent2 với K=5**
+#### Biến thể tốt nhất: **V4_Antecedent2 với K=4**
 
 **Lý do:**
-1. **Phân bố cluster hợp lý**: 1 nhóm chính (85%) + 4 nhóm nhỏ (3-5% mỗi nhóm)
-2. **Silhouette cao và ổn định**: 0.8091 (Excellent)
-3. **Có ý nghĩa marketing**: 5 nhóm khách hàng khác biệt để target
-4. **Tập trung vào pattern phức tạp**: Chỉ dùng 63 luật có antecedent ≥ 2
+1. **Phân bố cluster hợp lý**: 1 nhóm chính (90.6%) + 3 nhóm nhỏ (2.8-3.4%)
+2. **Silhouette cao và ổn định**: 0.8063 (Excellent)
+3. **Có ý nghĩa marketing**: 4 nhóm khách hàng khác biệt để target
+4. **Tập trung vào pattern phức tạp**: Chỉ dùng 66 luật có antecedent ≥ 2
 
 #### Các biến thể khác:
 
@@ -523,9 +530,9 @@ Thay vì chỉ chọn K có Silhouette cao nhất, sử dụng cơ chế **Smart
 
 **Tư duy chọn K:**
 - K=2 cho Silhouette cao nhất nhưng chỉ chia 2 nhóm (97% vs 3%) → Ít ý nghĩa marketing
-- K=5 cho V4_Antecedent2 tạo 5 nhóm với Silhouette vẫn Excellent (0.8091)
-- 4 nhóm nhỏ (3-5%) là các nhóm khách hàng có hành vi mua kèm đặc biệt → Target được
-- Chênh lệch Silhouette 10% (0.8998 vs 0.8091) chấp nhận được để có 5 nhóm thay vì 2
+- K=4 cho V4_Antecedent2 tạo 4 nhóm với Silhouette vẫn Excellent (0.8063)
+- 3 nhóm nhỏ (2.8-3.4%) là các nhóm khách hàng có hành vi mua kèm đặc biệt → Target được
+- Chênh lệch Silhouette ~9.7% (0.8927 vs 0.8063) chấp nhận được để có 4 nhóm thay vì 2
 
 ### 💾 Files output
 
@@ -538,7 +545,7 @@ Thay vì chỉ chọn K có Silhouette cao nhất, sử dụng cơ chế **Smart
 - `customer_clusters_v1_k2.csv` - V1 với K=2 (3,921 khách hàng)
 - `customer_clusters_v2_k2.csv` - V2 với K=2
 - `customer_clusters_v3_k2.csv` - V3 với K=2
-- `customer_clusters_v4_k5.csv` - V4 với K=5
+- `customer_clusters_v4_k4.csv` - V4 với K=4
 - `customer_clusters_all_variants.csv` - Tổng hợp (3,921 × 5)
 
 **Config để reload:**
@@ -591,7 +598,7 @@ FIGURE_SIZE = (14, 12)      # 2x2 subplots
 ALPHA = 0.6                 # Độ trong suốt để thấy overlap
 MARKER_SIZE = 30            # Kích thước điểm
 COLORS_K2 = ['#3498db', '#e74c3c']  # Blue, Red cho K=2
-COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu cho K=5
+COLORS_K4 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c']  # 4 màu cho K=4
 ```
 
 **Kỹ thuật visualization:**
@@ -601,19 +608,19 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 
 ### 📊 Kết quả
 
-#### Bảng Explained Variance
+#### Bảng Explained Variance và Inter/Intra
 
-| Variant | K | PCA PC1 | PCA PC2 | PCA Tổng | SVD SV1 | SVD SV2 | SVD Tổng |
-|---------|---|---------|---------|----------|---------|---------|----------|
-| V1_Binary | 2 | 4.9% | 2.5% | **7.4%** | 34.3% | 2.3% | **36.6%** |
-| V2_Weighted | 2 | 76.9% | 1.1% | **78.0%** | 76.9% | 1.2% | **78.1%** |
-| V3_Binary_RFM | 2 | 37.5% | 2.4% | **39.9%** | 37.5% | 2.4% | **39.9%** |
-| V4_Antecedent2 | 5 | 8.5% | 3.7% | **12.2%** | 69.9% | 3.4% | **73.3%** |
+| Variant | K | PCA Var% | SVD Var% | PCA Inter/Intra | SVD Inter/Intra | Mức độ tách |
+|---------|---|----------|----------|-----------------|-----------------|-------------|
+| V1_Binary | 2 | 36.9% | 36.8% | 6.46 | 6.44 | Cao |
+| V2_Weighted | 2 | 78.1% | 78.1% | 12.78 | 12.70 | Cao |
+| V3_Binary_RFM | 2 | 40.2% | 40.0% | 139.73 | 133.08 | Cao |
+| V4_Antecedent2 | 4 | 71.2% | 71.1% | 9.05 | 8.82 | Cao |
 
 **Nhận xét về Explained Variance:**
-- **V2_Weighted** giữ lại nhiều thông tin nhất (78%) do có trọng số lift×confidence
-- **V4_Antecedent2** khác biệt lớn giữa PCA (12.2%) và SVD (73.3%) - SVD phù hợp hơn với dữ liệu sparse
-- **V1_Binary** có PCA variance thấp (7.4%) nhưng SVD khá hơn (36.6%)
+- **V2_Weighted** giữ lại nhiều thông tin nhất (78.1%) do có trọng số lift×confidence
+- **V4_Antecedent2** có PCA và SVD gần tương đương (~71%), vẫn giữ được phần lớn phương sai ở 2D
+- **V1_Binary** và **V3_Binary_RFM** giữ mức phương sai trung bình (36-40%), nhưng V3 có inter/intra rất cao do outlier RFM
 
 ### 📈 Biểu đồ PCA 2D Projection
 
@@ -638,19 +645,15 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 #### 🔹 V3_Binary_RFM (K=2, Var=39.9%)
 - **Cluster 0** (màu xanh, n=3,920): Gần như toàn bộ khách hàng
 - **Cluster 1** (màu đỏ, n=1): **CHỈ CÓ 1 KHÁCH HÀNG** - Outlier cực đoan
-- **Cảnh báo ⚠️**: Silhouette = 0.9622 cao giả tạo do outlier này
+- **Cảnh báo ⚠️**: Silhouette = 0.9623 cao giả tạo do outlier này
 - **Mức độ tách cụm**: **Không đáng tin** - Cluster 1 là outlier, không phải segment thật
 - **Nguyên nhân**: RFM có khách hàng với Monetary cực cao (1.7M GBP) tạo outlier
 
-#### 🔹 V4_Antecedent2 (K=5, Var=12.2%)
-- **Cluster 0** (màu xanh, n=3,339): Nhóm chính 85%, phân bố gần gốc
-- **Cluster 1** (màu xanh lá, n=124): Nằm góc trên trái
-- **Cluster 2** (màu cam, n=133): Nằm giữa trái
-- **Cluster 3** (màu đỏ, n=202): Nằm góc dưới trái
-- **Cluster 4** (màu tím, n=123): Nằm bên phải
-- **Chồng lấn nhẹ**: Các cluster 1-4 có phần overlap khi project về 2D
-- **Mức độ tách cụm**: **TRUNG BÌNH** trên 2D, nhưng trong không gian 63 chiều có thể tách rõ hơn
-- **⚠️ Lưu ý quan trọng**: Biểu đồ 2D chỉ giữ 12.2% thông tin, mất 87.8%
+#### 🔹 V4_Antecedent2 (K=4, Var=71.2%)
+- **Cluster 0** (màu xanh, n=3,554): Nhóm chính 90.6%, phân bố rộng quanh tâm
+- **Clusters 1-3** (n=110-133): Nhóm nhỏ 2.8-3.4%, có chồng lấn khi project về 2D
+- **Mức độ tách cụm**: **CAO** tổng thể, nhưng các cụm nhỏ vẫn overlap trên 2D
+- **⚠️ Lưu ý**: Biểu đồ 2D giữ ~71% phương sai, vẫn mất ~29% thông tin
 
 ### 📈 Biểu đồ SVD 2D Projection
 
@@ -676,24 +679,23 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 - **Cluster 0**: Tập trung ở vùng SV1 = 0-20
 - **Mức độ tách cụm**: **Không đáng tin** - Giống kết quả PCA
 
-#### 🔹 V4_Antecedent2 (K=5, Var=73.3%)
-- **SVD giữ lại 73.3%** thông tin (vs 12.2% của PCA) - Cải thiện đáng kể!
-- **Cluster 0** (màu xanh, 85%): Phân bố rộng vùng SV1 = 3-6
-- **Clusters 1-4** (15%): Tập trung gần gốc (SV1 = 0-2)
-- **Chồng lấn**: Các cluster nhỏ overlap nhiều ở góc trái
+#### 🔹 V4_Antecedent2 (K=4, Var=71.1%)
+- **SVD giữ lại 71.1%** thông tin, gần tương đương PCA (71.2%)
+- **Cluster 0** (màu xanh, 90.6%): Phân bố rộng và tách khỏi các cụm nhỏ
+- **Clusters 1-3** (9.4%): Tập trung gần gốc, có chồng lấn
 - **Giải thích**: 
-  - Trong không gian 2D: Clusters 1-4 chồng lấn
-  - Trong không gian 63D gốc: Các cluster tách biệt tốt hơn (Silhouette = 0.8091)
-- **Mức độ tách cụm**: **TRUNG BÌNH-CAO** - Cluster 0 tách rõ, clusters 1-4 overlap trên 2D
+  - Trong không gian 2D: Các cụm nhỏ chồng lấn
+  - Trong không gian 66D gốc: Các cluster tách biệt tốt hơn (Silhouette = 0.8063)
+- **Mức độ tách cụm**: **CAO** tổng thể, nhưng cụm nhỏ vẫn overlap trên 2D
 
 ### 📊 Bảng so sánh mức độ tách cụm
 
-| Variant | K | PCA Var% | SVD Var% | Inter/Intra Ratio | Mức độ tách |
-|---------|---|----------|----------|-------------------|-------------|
-| V1_Binary | 2 | 7.4% | 36.6% | 2.85 | **Cao** |
-| V2_Weighted | 2 | 78.0% | 78.1% | 4.21 | **Rất cao** |
-| V3_Binary_RFM | 2 | 39.9% | 39.9% | N/A (outlier) | *Không đáng tin* |
-| V4_Antecedent2 | 5 | 12.2% | 73.3% | 1.52 | **Trung bình** |
+| Variant | K | PCA Var% | SVD Var% | PCA Inter/Intra | SVD Inter/Intra | Mức độ tách |
+|---------|---|----------|----------|-----------------|-----------------|-------------|
+| V1_Binary | 2 | 36.9% | 36.8% | 6.46 | 6.44 | **Cao** |
+| V2_Weighted | 2 | 78.1% | 78.1% | 12.78 | 12.70 | **Cao** |
+| V3_Binary_RFM | 2 | 40.2% | 40.0% | 139.73 | 133.08 | **Cao** |
+| V4_Antecedent2 | 4 | 71.2% | 71.1% | 9.05 | 8.82 | **Cao** |
 
 **Giải thích Inter/Intra Ratio:**
 - **Inter-cluster distance**: Khoảng cách trung bình giữa các centroid
@@ -708,12 +710,12 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 
 | Khía cạnh | PCA | SVD | Kết luận |
 |-----------|-----|-----|----------|
-| **V1_Binary** | 7.4% | 36.6% | SVD tốt hơn 5x |
-| **V2_Weighted** | 78.0% | 78.1% | Tương đương |
-| **V3_Binary_RFM** | 39.9% | 39.9% | Tương đương |
-| **V4_Antecedent2** | 12.2% | 73.3% | SVD tốt hơn 6x |
+| **V1_Binary** | 36.9% | 36.8% | Gần tương đương |
+| **V2_Weighted** | 78.1% | 78.1% | Tương đương |
+| **V3_Binary_RFM** | 40.2% | 40.0% | Gần tương đương |
+| **V4_Antecedent2** | 71.2% | 71.1% | Gần tương đương |
 
-**Kết luận**: **SVD phù hợp hơn** cho dữ liệu rule-based features (sparse, binary). PCA chỉ tốt khi dữ liệu có weighted (V2) hoặc kết hợp RFM (V3).
+**Kết luận**: PCA và SVD cho kết quả gần nhau trên dữ liệu hiện tại; V2_Weighted giữ phương sai cao nhất, còn V4_Antecedent2 giữ ~71% nên 2D vẫn phản ánh khá tốt cấu trúc cụm.
 
 #### 2. Đánh giá chất lượng cluster
 
@@ -722,31 +724,31 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 | **V1_Binary** | ✅ Tách rõ trên cả PCA và SVD | Baseline tốt |
 | **V2_Weighted** | ✅ Tách rất rõ, khoảng cách lớn | Tốt để phân biệt nhóm mua kèm mạnh |
 | **V3_Binary_RFM** | ⚠️ Có outlier, không tin cậy | Cần xử lý outlier trước |
-| **V4_Antecedent2** | ✅ SVD tốt, 5 clusters có ý nghĩa | **Khuyến nghị cho marketing** |
+| **V4_Antecedent2** | ✅ SVD tốt, 4 clusters có ý nghĩa | **Khuyến nghị cho marketing** |
 
 #### 3. Giải thích hiện tượng V4 clusters chồng lấn trên 2D
 
-**Câu hỏi**: Tại sao V4 có Silhouette = 0.8091 (Excellent) nhưng trên biểu đồ 2D các cluster 1-4 lại chồng lấn?
+**Câu hỏi**: Tại sao V4 có Silhouette = 0.8063 (Excellent) nhưng trên biểu đồ 2D các cụm nhỏ vẫn chồng lấn?
 
 **Giải đáp**:
 
-1. **2D projection chỉ là "bóng" của không gian 63 chiều**:
-   - SVD giữ lại 73.3%, mất 26.7% thông tin
-   - PCA chỉ giữ 12.2%, mất 87.8% thông tin
-   - Clusters có thể tách rõ trong các chiều không được hiển thị
+1. **2D projection chỉ là "bóng" của không gian 66 chiều**:
+   - SVD giữ lại 71.1%, mất ~28.9% thông tin
+   - PCA giữ 71.2%, mất ~28.8% thông tin
+   - Cụm nhỏ vẫn có thể chồng lấn trên 2D do khoảng cách ở các chiều không hiển thị
 
-2. **Silhouette được tính trong không gian gốc (63D)**:
+2. **Silhouette được tính trong không gian gốc (66D)**:
    - Không phải trên projection 2D
-   - Trong 63D, các cluster tách biệt tốt hơn
+   - Trong 66D, các cluster tách biệt tốt hơn
 
 3. **Ví dụ minh họa**:
    - Hãy tưởng tượng 2 quả bóng đặt cạnh nhau nhưng ở độ cao khác nhau
    - Nhìn từ trên xuống (2D): Chúng chồng lấn
    - Trong không gian 3D thực tế: Chúng tách biệt rõ ràng
 
-4. **Cluster 0 (85%) vs Clusters 1-4 (15%)**:
-   - Cluster 0 rõ ràng tách biệt ở vùng SV1 cao (3-6)
-   - Clusters 1-4 là các nhóm hành vi đặc biệt, có thể tách trong các chiều khác
+4. **Cluster 0 (90.6%) vs Clusters 1-3 (9.4%)**:
+   - Cluster 0 tách rõ hơn so với các cụm nhỏ trên 2D
+   - Cụm nhỏ là nhóm hành vi đặc biệt, có thể tách rõ hơn trong các chiều khác
 
 **Kết luận**: Biểu đồ 2D dùng để **trực quan hóa xu hướng**, không phải để đánh giá chất lượng clustering. Silhouette score trong không gian gốc mới là metric chính xác.
 
@@ -770,12 +772,12 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 
 | Variant | Features | Sparsity% | K | Silhouette | MaxCluster% | MinCluster% | PCA_Var% | SVD_Var% |
 |---------|----------|-----------|---|------------|-------------|-------------|----------|----------|
-| **V1_Binary** | 200 | 96.88 | 2 | 0.7039 | 96.8 | 3.2 | 36.7 | 36.6 |
-| **V2_Weighted** | 200 | 96.88 | 2 | 0.8920 | 96.8 | 3.2 | 78.1 | 78.1 |
-| **V3_Binary_RFM** | 203 | 95.45 | 2 | 0.9622* | 100.0 | 0.0 | 40.1 | 39.9 |
-| **V4_Antecedent2** | 63 | 97.92 | 5 | 0.8091 | 85.2 | 3.1 | 73.3 | 73.3 |
+| **V1_Binary** | 200 | 96.90 | 2 | 0.7050 | 96.8 | 3.2 | 36.9 | 36.8 |
+| **V2_Weighted** | 200 | 96.90 | 2 | 0.8920 | 96.8 | 3.2 | 78.1 | 78.1 |
+| **V3_Binary_RFM** | 203 | 95.47 | 2 | 0.9623* | 100.0 | 0.0 | 40.2 | 40.0 |
+| **V4_Antecedent2** | 66 | 97.93 | 4 | 0.8063 | 90.6 | 2.8 | 71.2 | 71.1 |
 
-> *V3 có Silhouette cao bất thường (0.9622) do outlier RFM gây ra phân cụm giả tạo
+> *V3 có Silhouette cao bất thường (0.9623) do outlier RFM gây ra phân cụm giả tạo
 
 ---
 
@@ -786,13 +788,13 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 | Metric | V1_Binary | V3_Binary_RFM | Winner | Lý do |
 |--------|-----------|---------------|--------|-------|
 | **Features** | 200 | 203 | V3 | Thêm 3 cột RFM |
-| **Sparsity (%)** | 96.88 | 95.45 | **V3** | Dữ liệu dày hơn (RFM không sparse) |
+| **Sparsity (%)** | 96.90 | 95.47 | **V3** | Dữ liệu dày hơn (RFM không sparse) |
 | **K** | 2 | 2 | - | Giống nhau |
-| **Silhouette** | 0.7039 | 0.9622 | V3* | *Cao bất thường do outlier |
+| **Silhouette** | 0.7050 | 0.9623 | V3* | *Cao bất thường do outlier |
 | **Max Cluster (%)** | 96.8 | 100.0 | - | V3 tập trung 1 cụm |
 | **Min Cluster (%)** | 3.2 | 0.0 | - | V3 cụm còn lại = 0 |
-| **PCA Variance (%)** | 36.7 | 40.1 | **V3** | Giữ được nhiều thông tin hơn |
-| **SVD Variance (%)** | 36.6 | 39.9 | **V3** | Giữ được nhiều thông tin hơn |
+| **PCA Variance (%)** | 36.9 | 40.2 | **V3** | Giữ được nhiều thông tin hơn |
+| **SVD Variance (%)** | 36.8 | 40.0 | **V3** | Giữ được nhiều thông tin hơn |
 
 **🏆 Kết luận V1 vs V3**:
 
@@ -816,20 +818,20 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 | Metric | V1_Binary | V2_Weighted | Winner | Lý do |
 |--------|-----------|-------------|--------|-------|
 | **Features** | 200 | 200 | - | Giống nhau |
-| **Sparsity (%)** | 96.88 | 96.88 | - | Giống nhau (cùng activation pattern) |
-| **Value Range** | 0 - 1 | 7.4 - 71.1 | **V2** | Phân biệt được độ mạnh luật |
+| **Sparsity (%)** | 96.90 | 96.90 | - | Giống nhau (cùng activation pattern) |
+| **Value Range** | 0 - 1 | 9.47 - 71.15 | **V2** | Phân biệt được độ mạnh luật |
 | **K** | 2 | 2 | - | Giống nhau |
-| **Silhouette** | 0.7039 | 0.8920 | **V2** | Cao hơn 26.7% |
+| **Silhouette** | 0.7050 | 0.8920 | **V2** | Cao hơn 26.5% |
 | **Max Cluster (%)** | 96.8 | 96.8 | - | Giống nhau |
 | **Min Cluster (%)** | 3.2 | 3.2 | - | Giống nhau |
-| **PCA Variance (%)** | 36.7 | 78.1 | **V2** | Cao hơn **2.13x** |
-| **SVD Variance (%)** | 36.6 | 78.1 | **V2** | Cao hơn **2.13x** |
+| **PCA Variance (%)** | 36.9 | 78.1 | **V2** | Cao hơn **2.12x** |
+| **SVD Variance (%)** | 36.8 | 78.1 | **V2** | Cao hơn **2.12x** |
 
 **🏆 Kết luận V1 vs V2**:
 
 | Tiêu chí | Cấu hình tốt hơn | Lý do |
 |----------|------------------|-------|
-| **Chất lượng clustering** | **V2_Weighted** | Silhouette cao hơn đáng kể (0.892 vs 0.704) |
+| **Chất lượng clustering** | **V2_Weighted** | Silhouette cao hơn đáng kể (0.892 vs 0.705) |
 | **Giữ thông tin (2D)** | **V2_Weighted** | PCA/SVD variance gấp 2x V1 |
 | **Phân bố cụm** | Tương đương | Cả hai có cùng phân bố 96.8%/3.2% |
 | **Khuyến nghị** | **V2** | Tốt hơn ở mọi metric quan trọng |
@@ -838,45 +840,45 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 - Weighted encoding (lift × confidence) tạo **variance cao hơn** trong dữ liệu
 - Các khách hàng kích hoạt luật mạnh (lift cao) được phân biệt với luật yếu
 - PCA/SVD giữ được **78.1% variance** (gấp đôi V1) → Biểu đồ 2D chính xác hơn
-- Silhouette **0.892 (Excellent)** vs 0.704 (Good)
+- Silhouette **0.892 (Excellent)** vs 0.705 (Good)
 
 ---
 
 ### 📊 5.4. So sánh Full Rules vs Filtered Rules (Top-K Large vs Top-K Small)
 
-**Câu hỏi**: Dùng nhiều luật (200) hay ít luật chất lượng (63, antecedent ≥ 2)?
+**Câu hỏi**: Dùng nhiều luật (200) hay ít luật chất lượng (66, antecedent ≥ 2)?
 
-| Metric | V1_Full (200 rules) | V4_Filtered (63 rules) | Winner | Lý do |
+| Metric | V1_Full (200 rules) | V4_Filtered (66 rules) | Winner | Lý do |
 |--------|---------------------|------------------------|--------|-------|
-| **Features** | 200 | 63 | V1 | Đa dạng hơn |
-| **Sparsity (%)** | 96.88 | 97.92 | **V1** | Dữ liệu dày hơn |
-| **K** | 2 | 5 | **V4** | Đa dạng cụm hơn |
-| **Silhouette** | 0.7039 | 0.8091 | **V4** | Cao hơn 14.9% |
-| **Max Cluster (%)** | 96.8 | 85.2 | - | - |
-| **Min Cluster (%)** | 3.2 | 3.1 | - | - |
-| **Cluster Balance** | 30.25x | 27.48x | **V4** | Cân bằng hơn |
-| **PCA Variance (%)** | 36.7 | 73.3 | **V4** | Cao hơn **2x** |
-| **SVD Variance (%)** | 36.6 | 73.3 | **V4** | Cao hơn **2x** |
+| **Features** | 200 | 66 | V1 | Đa dạng hơn |
+| **Sparsity (%)** | 96.90 | 97.93 | **V1** | Dữ liệu dày hơn |
+| **K** | 2 | 4 | **V4** | Đa dạng cụm hơn |
+| **Silhouette** | 0.7050 | 0.8063 | **V4** | Cao hơn 14.4% |
+| **Max Cluster (%)** | 96.8 | 90.6 | - | - |
+| **Min Cluster (%)** | 3.2 | 2.8 | - | - |
+| **Cluster Balance** | 30.37x | 32.31x | **V1** | Cân bằng hơn |
+| **PCA Variance (%)** | 36.9 | 71.2 | **V4** | Cao hơn **1.93x** |
+| **SVD Variance (%)** | 36.8 | 71.1 | **V4** | Cao hơn **1.93x** |
 
 **🏆 Kết luận V1 vs V4**:
 
 | Tiêu chí | Cấu hình tốt hơn | Lý do |
 |----------|------------------|-------|
-| **Số lượng cụm** | **V4_Antecedent2** | 5 cụm vs 2 cụm → Phân khúc chi tiết hơn |
-| **Chất lượng clustering** | **V4_Antecedent2** | Silhouette 0.809 vs 0.704 |
-| **Cân bằng cụm** | **V4_Antecedent2** | 27.48x vs 30.25x |
+| **Số lượng cụm** | **V4_Antecedent2** | 4 cụm vs 2 cụm → Phân khúc chi tiết hơn |
+| **Chất lượng clustering** | **V4_Antecedent2** | Silhouette 0.806 vs 0.705 |
+| **Cân bằng cụm** | **V1_Binary** | 30.37x vs 32.31x |
 | **Giữ thông tin (2D)** | **V4_Antecedent2** | Variance gấp 2x |
 | **Khuyến nghị** | **V4 cho marketing** | Phân khúc chi tiết, dễ xây dựng chiến lược |
 
 **Giải thích**: V4 tốt hơn cho marketing vì:
-- **5 cụm** → Có thể xây dựng 5 chiến lược marketing khác nhau
-- Chỉ dùng **63 luật có antecedent ≥ 2** → Tập trung vào pattern mua kèm phức tạp, có ý nghĩa
+- **4 cụm** → Có thể xây dựng 4 chiến lược marketing khác nhau
+- Chỉ dùng **66 luật có antecedent ≥ 2** → Tập trung vào pattern mua kèm phức tạp, có ý nghĩa
 - Loại bỏ luật đơn giản (1 antecedent) giúp **giảm nhiễu**
-- Cluster balance tốt hơn → Không có cụm quá lớn áp đảo
+- Cluster balance kém hơn nhẹ so với V1 nhưng vẫn đủ đa dạng cho phân khúc
 
 **Trade-off**:
 - V1 capture **nhiều pattern hơn** (200 rules) nhưng bao gồm cả luật đơn giản
-- V4 capture **pattern chất lượng hơn** (63 rules) nhưng mất một số thông tin
+- V4 capture **pattern chất lượng hơn** (66 rules) nhưng mất một số thông tin
 
 ---
 
@@ -884,7 +886,7 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 
 | Mục đích sử dụng | Cấu hình tốt nhất | Lý do |
 |------------------|-------------------|-------|
-| **Marketing Segmentation** | **V4_Antecedent2** | 5 cụm đa dạng, dễ xây dựng chiến lược riêng cho từng nhóm |
+| **Marketing Segmentation** | **V4_Antecedent2** | 4 cụm đa dạng, dễ xây dựng chiến lược riêng cho từng nhóm |
 | **Phân tích hành vi mua kèm** | **V2_Weighted** | Phản ánh độ mạnh của luật, không chỉ 0/1 |
 | **Phân tích giá trị khách hàng** | V3_Binary_RFM* | Kết hợp rules + RFM (*cần xử lý outlier) |
 | **Baseline/Reference** | V1_Binary | Đơn giản, dễ hiểu, làm chuẩn so sánh |
@@ -895,14 +897,14 @@ COLORS_K5 = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']  # 5 màu ch
 
 2. **Rule-only vs Rule+RFM**: V3 có metrics cao hơn nhưng **không đáng tin cậy** do outlier RFM. Cần xử lý outlier trước khi kết luận. Trong điều kiện hiện tại, **V1 ổn định hơn**.
 
-3. **Top-K Large vs Top-K Small**: V4 (63 luật filtered) **tốt hơn** V1 (200 luật) cho mục đích marketing vì:
-   - Nhiều cụm hơn (5 vs 2)
+3. **Top-K Large vs Top-K Small**: V4 (66 luật filtered) **tốt hơn** V1 (200 luật) cho mục đích marketing vì:
+   - Nhiều cụm hơn (4 vs 2)
    - Silhouette cao hơn
    - Cluster balance tốt hơn
    - Tập trung vào luật có ý nghĩa (antecedent ≥ 2)
 
 4. **Khuyến nghị cuối cùng**:
-   - **Cho Marketing**: Sử dụng **V4_Antecedent2** với K=5
+   - **Cho Marketing**: Sử dụng **V4_Antecedent2** với K=4
    - **Cho Phân tích**: Sử dụng **V2_Weighted** để hiểu độ mạnh của từng luật
 
 ### 💾 Files output
@@ -931,16 +933,15 @@ Bảng thống kê số lượng khách hàng trong từng cụm cho mỗi biế
 | | 1 | 124 | 3.2 |
 | **V3_Binary_RFM** | 0 | 3,920 | 100.0 |
 | | 1 | 1 | 0.0 |
-| **V4_Antecedent2** | 0 | 3,339 | 85.2 |
+| **V4_Antecedent2** | 0 | 3,554 | 90.6 |
 | | 1 | 124 | 3.2 |
-| | 2 | 133 | 3.4 |
-| | 3 | 202 | 5.2 |
-| | 4 | 123 | 3.1 |
+| | 2 | 110 | 2.8 |
+| | 3 | 133 | 3.4 |
 
 **Nhận xét:**
 - **V1 & V2**: Phân cụm tương tự, 96.8% khách thuộc cụm chính
 - **V3**: Có outlier RFM gây phân bố không đồng đều (100%/0%)
-- **V4**: Phân khúc tốt nhất với 5 cụm có kích thước đa dạng, phù hợp cho marketing
+- **V4**: Phân khúc tốt nhất với 4 cụm rõ ràng, phù hợp cho marketing
 
 ![Cluster Distribution](images/Req6_ClusterDistribution.png)
 
@@ -954,7 +955,7 @@ Biểu đồ hiển thị 4 bar charts (2x2 grid) thể hiện phân bố số l
 
 - **V3_Binary_RFM (K=2)**: Cluster 0 chiếm gần như toàn bộ với 3,920 khách (100.0%), cluster 1 chỉ có 1 khách (0.0%). Đây là kết quả do outlier RFM gây ra.
 
-- **V4_Antecedent2 (K=5)**: Biểu đồ có 5 cột thể hiện sự phân khúc đa dạng hơn. Cluster 0 (85.2%, 3,339 khách) là nhóm chính, các clusters 1-4 có kích thước từ 123-202 khách (3.1%-5.2%), cho phép xây dựng chiến lược marketing riêng biệt cho từng nhóm nhỏ.
+- **V4_Antecedent2 (K=4)**: Biểu đồ có 4 cột thể hiện sự phân khúc đa dạng hơn. Cluster 0 (90.6%, 3,554 khách) là nhóm chính, các clusters 1-3 có kích thước 110-133 khách (2.8%-3.4%), cho phép xây dựng chiến lược marketing riêng biệt cho từng nhóm nhỏ.
 
 #### 6.2. Phân tích RFM theo Cụm
 
@@ -968,7 +969,7 @@ Biểu đồ hiển thị 4 bar charts (2x2 grid) thể hiện phân bố số l
 | Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
 |---------|-------------|--------|----------|--------|----------|--------|----------|
 | 0 | 3,797 | 93.2 | 51 days | 4.1 | 2 | 1,810 | 631 GBP |
-| 1 | 124 | 60.5 | 26 days | 21.3 | 5 | 17,366 | 1,638 GBP |
+| 1 | 124 | 60.5 | 25.5 days | 21.3 | 5 | 17,366 | 1,638 GBP |
 
 ##### V3_Binary_RFM (K=2)
 | Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
@@ -978,21 +979,19 @@ Biểu đồ hiển thị 4 bar charts (2x2 grid) thể hiện phân bố số l
 
 > ⚠️ **Lưu ý**: V3 có 1 outlier RFM với M = 1.7M GBP, gây phân cụm không đáng tin cậy
 
-##### V4_Antecedent2 (K=5) - **Khuyến nghị cho Marketing**
+##### V4_Antecedent2 (K=4) - **Khuyến nghị cho Marketing**
 | Cluster | N_Customers | R_Mean | R_Median | F_Mean | F_Median | M_Mean | M_Median |
 |---------|-------------|--------|----------|--------|----------|--------|----------|
-| 0 | 3,339 | 101.2 | 59 days | 3.6 | 2 | 1,563 | 559 GBP |
-| 1 | 124 | 60.5 | 26 days | 21.3 | 5 | 17,366 | 1,638 GBP |
-| 2 | 133 | 26.4 | 18 days | 7.2 | 5 | 3,023 | 1,536 GBP |
-| 3 | 202 | 39.3 | 19 days | 6.8 | 4 | 2,985 | 1,685 GBP |
-| 4 | 123 | 37.1 | 23 days | 8.6 | 6 | 5,258 | 2,158 GBP |
+| 0 | 3,554 | 97.3 | 55 days | 3.8 | 2 | 1,706 | 600 GBP |
+| 1 | 124 | 60.5 | 25.5 days | 21.3 | 5 | 17,366 | 1,638 GBP |
+| 2 | 110 | 41.1 | 16.5 days | 7.9 | 5 | 3,696 | 1,995 GBP |
+| 3 | 133 | 26.4 | 18 days | 7.2 | 5 | 3,023 | 1,536 GBP |
 
 **Phân tích V4:**
-- **Cluster 0**: Nhóm lớn nhất (85.2%), R cao (101 ngày), F thấp (3.6), M thấp (1,563 GBP) → **Casual Buyers**
-- **Cluster 1**: R trung bình (60 ngày), F rất cao (21.3), M rất cao (17,366 GBP) → **Super VIP**
-- **Cluster 2**: R thấp nhất (26 ngày), F khá (7.2), M khá (3,023 GBP) → **Recent Active**
-- **Cluster 3**: R thấp (39 ngày), F khá (6.8), M khá (2,985 GBP) → **Loyal High-Value**
-- **Cluster 4**: R thấp (37 ngày), F cao (8.6), M cao (5,258 GBP) → **Loyal High-Value**
+- **Cluster 0**: Nhóm lớn nhất (90.6%), R cao (97 ngày), F thấp (3.8), M thấp (1,706 GBP) → **Mainstream**
+- **Cluster 1**: R trung bình (60 ngày), F rất cao (21.3), M rất cao (17,366 GBP) → **Champion Super VIP**
+- **Cluster 2**: R thấp (41 ngày), F khá (7.9), M cao (3,696 GBP) → **Loyal High-Value**
+- **Cluster 3**: R thấp nhất (26 ngày), F khá (7.2), M khá (3,023 GBP) → **Recent Active**
 
 ![RFM by Cluster V1](images/Req6_RFMByCluster_V1_Binary.png)
 
@@ -1012,7 +1011,7 @@ Biểu đồ gồm 3 box plots (Recency, Frequency, Monetary) cho 2 clusters c�
 
 Tương tự V1, biểu đồ V2 có pattern gần như giống hệt do weighted encoding không ảnh hưởng đến phân bố RFM mà chỉ thay đổi cách tính điểm đặc trưng:
 
-- **Recency**: Cluster 0 median ~51 ngày, Cluster 1 median ~26 ngày
+- **Recency**: Cluster 0 median ~51 ngày, Cluster 1 median ~25.5 ngày
 - **Frequency**: Cluster 0 median = 2, Cluster 1 median = 5 với outliers cao
 - **Monetary**: Cluster 0 median ~631 GBP, Cluster 1 median ~1,638 GBP
 
@@ -1036,15 +1035,15 @@ Kết luận: V3 không đáng tin cậy cho phân tích marketing do bị chi p
 
 **Giải thích biểu đồ Req6_RFMByCluster_V4_Antecedent2.png:**
 
-Biểu đồ V4 có 5 box plots cho mỗi metric RFM, thể hiện sự phân khúc rõ ràng:
+Biểu đồ V4 có 4 box plots cho mỗi metric RFM, thể hiện sự phân khúc rõ ràng:
 
-- **Recency**: Cluster 0 (xanh lá) có median ~59 ngày - nhóm ít hoạt động. Cluster 2 (xanh dương) có median thấp nhất ~18 ngày - nhóm mới/active. Clusters 1, 3, 4 có median 19-26 ngày.
+- **Recency**: Cluster 0 (Mainstream) có median ~55 ngày - nhóm ít hoạt động. Clusters 2-3 có median thấp nhất (~16.5-18 ngày) - nhóm mua gần đây hơn.
 
-- **Frequency**: Cluster 1 (đỏ) nổi bật với median = 5 và outliers rất cao (>20 đơn) - đây là nhóm VIP. Clusters 2, 3, 4 có median 4-6 đơn. Cluster 0 chỉ có median = 2 đơn.
+- **Frequency**: Cluster 1 (Champion) nổi bật với median = 5 và outliers rất cao (>20 đơn) - nhóm VIP. Clusters 2-3 có median = 5. Cluster 0 chỉ có median = 2 đơn.
 
-- **Monetary**: Cluster 1 có phân phối vượt trội với nhiều outliers trên 10,000 GBP - Super VIP. Cluster 4 có median cao thứ 2 (~2,158 GBP). Cluster 0 có median thấp nhất (~559 GBP).
+- **Monetary**: Cluster 1 có phân phối vượt trội với nhiều outliers trên 10,000 GBP - Super VIP. Cluster 2 có median cao (~1,995 GBP). Cluster 0 có median thấp nhất (~600 GBP).
 
-Biểu đồ cho thấy V4 phân khúc thành công 5 nhóm khách hàng có hành vi RFM khác biệt rõ ràng.
+Biểu đồ cho thấy V4 phân khúc thành công 4 nhóm khách hàng có hành vi RFM khác biệt rõ ràng.
 
 #### 6.3. Top 10 Luật được kích hoạt nhiều nhất theo Cụm
 
@@ -1054,17 +1053,17 @@ Dựa trên phân tích rule activation trong từng cluster, chúng tôi xác �
 
 **Giải thích biểu đồ Req6_RuleActivationHeatmap.png:**
 
-Heatmap hiển thị tỷ lệ kích hoạt (Activation Rate %) của Top 15 luật kết hợp theo 5 clusters của V4_Antecedent2:
+Heatmap hiển thị tỷ lệ kích hoạt (Activation Rate %) của Top 15 luật kết hợp theo 4 clusters của V4_Antecedent2:
 
 - **Trục Y (dọc)**: Liệt kê 15 luật kết hợp có tỷ lệ kích hoạt cao nhất, mỗi luật được rút gọn tên (~40 ký tự đầu). Ví dụ: "PINK REGENCY TEACUP AND SAUCER → GREEN RE...", "SET/6 RED SPOTTY PAPER CUPS → SET/6 RED..."
 
-- **Trục X (ngang)**: 5 clusters (Cluster 0-4)
+- **Trục X (ngang)**: 4 clusters (Cluster 0-3)
 
 - **Màu sắc**: Gradient từ vàng nhạt (0%) đến đỏ đậm (>10%). Mỗi ô hiển thị giá trị % cụ thể.
 
 - **Pattern quan sát được**:
-  - **Cluster 0** (Mainstream, 85.2%): Có activation rate thấp nhất (<1-2%) cho hầu hết các luật, do đây là nhóm mua ít, không có hành vi mua kèm đặc trưng.
-  - **Clusters 1-4** (nhóm nhỏ): Có activation rate cao hơn đáng kể (5-15%), cho thấy các nhóm này có hành vi mua kèm rõ ràng hơn.
+  - **Cluster 0** (Mainstream, 90.6%): Có activation rate thấp nhất (<1-2%) cho hầu hết các luật, do đây là nhóm mua ít, không có hành vi mua kèm đặc trưng.
+  - **Clusters 1-3** (nhóm nhỏ): Có activation rate cao hơn đáng kể (5-15%), cho thấy các nhóm này có hành vi mua kèm rõ ràng hơn.
   - **Cluster 1** (Champion VIP): Có nhiều ô màu đỏ đậm, cho thấy VIP kích hoạt nhiều luật do mua đa dạng sản phẩm.
 
 - **Ý nghĩa marketing**: Các luật có activation rate cao trong cluster cụ thể có thể dùng làm bundle recommendation cho nhóm đó.
@@ -1091,21 +1090,19 @@ Heatmap hiển thị tỷ lệ kích hoạt (Activation Rate %) của Top 15 lu�
 
 | Cluster | Name_EN | Name_VN | Segment_Type | N_Customers | Pct (%) |
 |---------|---------|---------|--------------|-------------|---------|
-| 0 | Mainstream Casual Buyers | Khach Hang Pho Thong | Mainstream | 3,339 | 85.2 |
-| 1 | Champion Super VIP | Khach VIP Sieu Cap | Champion | 124 | 3.2 |
-| 2 | Recent Active Buyers | Khach Hang Moi Tich Cuc | Recent | 133 | 3.4 |
-| 3 | Loyal High-Value | Khach Hang Trung Thanh | Loyal | 202 | 5.2 |
-| 4 | Loyal High-Value | Khach Hang Trung Thanh | Loyal | 123 | 3.1 |
+| 0 | Mainstream Casual Buyers 00 | Khách Mua Sắm Thông Thường 00 | Mainstream | 3,554 | 90.6 |
+| 1 | Champion Super VIP 01 | Siêu VIP Hàng Đầu 01 | Champion | 124 | 3.2 |
+| 2 | Loyal High-Value 02 | Khách Trung Thành Giá Trị Cao 02 | Loyal | 110 | 2.8 |
+| 3 | Recent Active Buyers 03 | Khách Mua Gần Đây 03 | Recent | 133 | 3.4 |
 
 ##### Mô tả Persona từng Cụm:
 
 | Cluster | Persona |
 |---------|---------|
-| **0 - Mainstream** | Khách hàng phổ thông, mua ít, R cao (~101 ngày), phù hợp chiến dịch kích hoạt và bundle giá tốt |
+| **0 - Mainstream** | Khách phổ thông, mua ít, R cao (~97 ngày), phù hợp chiến dịch kích hoạt và bundle giá tốt |
 | **1 - Champion** | Super VIP, F rất cao (21.3), M rất cao (17,366 GBP), cần chăm sóc đặc biệt và trải nghiệm exclusive |
-| **2 - Recent** | Khách mới hoặc vừa mua gần đây (R=26 ngày), cần nurture để chuyển thành loyal |
-| **3 - Loyal** | Khách trung thành, F=6.8, M=2,985 GBP, tiềm năng upsell lên premium |
-| **4 - Loyal** | Khách trung thành cao cấp, F=8.6, M=5,258 GBP, tiềm năng referral program |
+| **2 - Loyal** | Khách trung thành, F=7.9, M=3,696 GBP, tiềm năng upsell lên premium |
+| **3 - Recent** | Khách mới/vừa mua gần đây (R~26 ngày), cần nurture để chuyển thành loyal |
 
 #### 6.5. Chiến lược Marketing cụ thể cho từng Cụm
 
@@ -1124,77 +1121,74 @@ Heatmap hiển thị tỷ lệ kích hoạt (Activation Rate %) của Top 15 lu�
 
 Dựa trên các luật kết hợp có Lift cao nhất trong từng cluster:
 
-| Cluster | Top Bundle Recommendation | Lift | Confidence |
-|---------|---------------------------|------|------------|
-| **0 - Mainstream** | PINK REGENCY TEACUP AND SAUCER + GREEN REGENCY TEACUP AND SAUCER | 71.09 | 0.96 |
-| **1 - Champion** | SET/6 RED SPOTTY PAPER CUPS + SET/6 RED SPOTTY PAPER PLATES | 55.31 | 0.89 |
-| **2 - Recent** | JUMBO BAG RED RETROSPOT + JUMBO BAG PINK POLKADOT | 35.02 | 0.82 |
-| **3 - Loyal** | ROUND SNACK BOXES SET OF 4 FRUITS + ROUND SNACK BOXES SET OF 4 WOODLAND | 57.00 | 0.85 |
-| **4 - Loyal** | STRAWBERRY CERAMIC TRINKET BOX + STRAWBERRY CERAMIC TRINKET POT | 60.00 | 0.91 |
+| Cluster | Top Bundle Recommendation (from rules) |
+|---------|----------------------------------------|
+| **0 - Mainstream** | HERB MARKER BASIL... => HERB MARKER THYME... |
+| **1 - Champion** | HERB MARKER CHIVES ... => HERB MARKER PARSLEY... |
+| **2 - Loyal** | HERB MARKER THYME... => HERB MARKER MINT... |
+| **3 - Recent** | HERB MARKER BASIL, HERB M... => HERB MARKER MINT... |
 
 ![Strategy Distribution](images/Req6_StrategyDistribution.png)
 
 **Giải thích biểu đồ Req6_StrategyDistribution.png:**
 
-Pie chart thể hiện phân bố các loại chiến lược marketing được áp dụng cho 5 clusters của V4:
+Pie chart thể hiện phân bố các loại chiến lược marketing được áp dụng cho 4 clusters của V4:
 
 - **Màu sắc và tỷ lệ**:
-  - **Loyalty Program & Upsell Premium** (xanh dương, ~40%): Áp dụng cho 2 clusters Loyal (Cluster 3 và 4) - chiến lược giữ chân và nâng cấp khách hàng trung thành.
-  - **Mass Cross-sell & Bundle Promotion** (xanh lá, ~20%): Áp dụng cho Cluster 0 (Mainstream) - chiến lược khuyến mãi đại trà cho nhóm khách phổ thông.
-  - **VIP Exclusive & Luxury Experience** (vàng, ~20%): Áp dụng cho Cluster 1 (Champion VIP) - chiến lược chăm sóc đặc biệt cho khách VIP.
-  - **Engagement & Second Purchase Push** (đỏ, ~20%): Áp dụng cho Cluster 2 (Recent Active) - chiến lược thúc đẩy đơn hàng thứ 2 cho khách mới.
+  - **Mass Cross-sell & Bundle Promotion** (Mainstream) - Cluster 0
+  - **VIP Exclusive & Luxury Experience** (Champion) - Cluster 1
+  - **Loyalty Program & Upsell Premium** (Loyal) - Cluster 2
+  - **Engagement & Second Purchase Push** (Recent) - Cluster 3
 
-- **Ý nghĩa**: Biểu đồ cho thấy sự đa dạng trong chiến lược marketing, mỗi segment có approach riêng phù hợp với đặc điểm hành vi của nhóm đó. Loyalty chiếm tỷ trọng lớn nhất do có 2 clusters thuộc phân khúc này.
+- **Ý nghĩa**: Biểu đồ cho thấy 4 chiến lược tương ứng 4 phân khúc, mỗi segment có approach riêng phù hợp với đặc điểm hành vi của nhóm đó.
 
 #### 6.6. Bảng tổng hợp Profile hoàn chỉnh (V4_Antecedent2)
 
 | Cluster | Name_EN | Segment_Type | N_Customers | Pct (%) | R_Mean | F_Mean | M_Mean | Strategy_Type |
 |---------|---------|--------------|-------------|---------|--------|--------|--------|---------------|
-| 0 | Mainstream Casual Buyers | Mainstream | 3,339 | 85.2 | 101.2 | 3.6 | 1,563 | Mass Cross-sell & Bundle Promotion |
-| 1 | Champion Super VIP | Champion | 124 | 3.2 | 60.5 | 21.3 | 17,366 | VIP Exclusive & Luxury Experience |
-| 2 | Recent Active Buyers | Recent | 133 | 3.4 | 26.4 | 7.2 | 3,023 | Engagement & Second Purchase Push |
-| 3 | Loyal High-Value | Loyal | 202 | 5.2 | 39.3 | 6.8 | 2,985 | Loyalty Program & Upsell Premium |
-| 4 | Loyal High-Value | Loyal | 123 | 3.1 | 37.1 | 8.6 | 5,258 | Loyalty Program & Upsell Premium |
+| 0 | Mainstream Casual Buyers 00 | Mainstream | 3,554 | 90.6 | 97.3 | 3.8 | 1,706 | Mass Cross-sell & Bundle Promotion |
+| 1 | Champion Super VIP 01 | Champion | 124 | 3.2 | 60.5 | 21.3 | 17,366 | VIP Exclusive & Luxury Experience |
+| 2 | Loyal High-Value 02 | Loyal | 110 | 2.8 | 41.1 | 7.9 | 3,696 | Loyalty Program & Upsell Premium |
+| 3 | Recent Active Buyers 03 | Recent | 133 | 3.4 | 26.4 | 7.2 | 3,023 | Engagement & Second Purchase Push |
 
 ![Cluster Profile Summary](images/Req6_ClusterProfileSummary.png)
 
 **Giải thích biểu đồ Req6_ClusterProfileSummary.png:**
 
-Biểu đồ gồm 3 bar charts so sánh giá trị RFM trung bình giữa 5 clusters của V4:
+Biểu đồ gồm 3 bar charts so sánh giá trị RFM trung bình giữa 4 clusters của V4:
 
 - **Recency (trái)** - "Lower = Better":
-  - 5 cột màu khác nhau (xanh lá, đỏ, xanh dương, vàng, tím) cho clusters 0-4
-  - Cluster 0 (Mainstream) có R cao nhất = 101 ngày → Khách không active
-  - Cluster 2 (Recent) có R thấp nhất = 26 ngày → Khách vừa mua gần đây
-  - Clusters 3, 4 (Loyal) có R = 37-39 ngày → Khách hoạt động thường xuyên
-  - Cluster 1 (Champion) có R = 60 ngày → VIP vẫn active nhưng không phải gần đây nhất
+  - 4 cột màu khác nhau cho clusters 0-3
+  - Cluster 0 (Mainstream) có R cao nhất ~97 ngày → Khách ít active
+  - Cluster 3 (Recent) có R thấp nhất ~26 ngày → Khách vừa mua gần đây
+  - Cluster 2 (Loyal) có R ~41 ngày → Khách hoạt động ổn định
+  - Cluster 1 (Champion) có R ~60 ngày → VIP nhưng không phải gần đây nhất
 
 - **Frequency (giữa)** - "Higher = Better":
   - Cluster 1 (Champion) nổi bật với F = 21.3 đơn → Mua rất nhiều
-  - Cluster 4 có F = 8.6 đơn → Loyal cao cấp
-  - Cluster 0 có F thấp nhất = 3.6 đơn → Casual buyers
-  - Sự chênh lệch rõ rệt giữa VIP (21.3) và Mainstream (3.6) là 6x
+  - Cluster 2/3 có F ~7-8 đơn → Nhóm trung thành/hoạt động
+  - Cluster 0 có F thấp nhất = 3.8 đơn → Casual buyers
 
 - **Monetary (phải)** - "Higher = Better":
   - Cluster 1 (Champion) vượt trội với M = 17,366 GBP → Super VIP
-  - Cluster 4 có M = 5,258 GBP → Loyal cao cấp
-  - Cluster 0 có M thấp nhất = 1,563 GBP → Chi tiêu thấp
-  - Sự chênh lệch giữa VIP và Mainstream là 11x
+  - Cluster 2 có M = 3,696 GBP → Loyal high-value
+  - Cluster 3 có M = 3,023 GBP → Recent active
+  - Cluster 0 có M thấp nhất = 1,706 GBP → Chi tiêu thấp
 
-**Kết luận từ biểu đồ**: Phân cụm V4 tạo ra 5 nhóm có profile RFM khác biệt rõ ràng, từ đó có thể áp dụng chiến lược marketing phù hợp cho từng nhóm.
+**Kết luận từ biểu đồ**: Phân cụm V4 tạo ra 4 nhóm có profile RFM khác biệt rõ ràng, từ đó có thể áp dụng chiến lược marketing phù hợp cho từng nhóm.
 
 ### 💡 Nhận xét tổng hợp
 
 1. **V4_Antecedent2 là cấu hình tốt nhất cho marketing** vì:
-   - 5 cụm với kích thước và đặc điểm khác biệt rõ ràng
-   - Có thể xây dựng 5 chiến lược marketing riêng biệt
-   - Silhouette score = 0.8091 (Excellent)
+   - 4 cụm với kích thước và đặc điểm khác biệt rõ ràng
+   - Có thể xây dựng 4 chiến lược marketing riêng biệt
+   - Silhouette score = 0.8063 (Excellent)
 
 2. **Phân khúc khách hàng có ý nghĩa**:
-   - **85.2%** là Mainstream → Cần chiến dịch mass marketing, bundle promotion
+   - **90.6%** là Mainstream → Cần chiến dịch mass marketing, bundle promotion
    - **3.2%** là Champion → Cần chăm sóc VIP, exclusive experience
    - **3.4%** là Recent → Cần nurture để chuyển thành loyal
-   - **8.3%** là Loyal → Cần loyalty program, upsell premium
+   - **2.8%** là Loyal → Cần loyalty program, upsell premium
 
 3. **Chiến lược liên kết trực tiếp với đặc trưng cụm**:
    - Bundle recommendations dựa trên association rules có Lift cao
@@ -1257,7 +1251,7 @@ ShopCluster/
 │       ├── customer_clusters_v1_k2.csv       # Yêu cầu 3
 │       ├── customer_clusters_v2_k2.csv
 │       ├── customer_clusters_v3_k2.csv
-│       ├── customer_clusters_v4_k5.csv
+│       ├── customer_clusters_v4_k4.csv
 │       ├── customer_clusters_all_variants.csv
 │       └── clustering_experiments/           # Thí nghiệm K
 │           ├── elbow_results.csv
@@ -1314,22 +1308,22 @@ TOPK_VALUES = [50, 100, 150, 200, 250, 300, 400, 500]
 |------|----------|----------|----------------|----------|----------|----------------------|--------|-----------------|-----------------|
 | **50** | 71.32 | 69.03 | 90.38% | 3.5% | 97.20% | 1.40 | 7 | **0.906** | 0.846 |
 | **100** | 58.42 | 34.22 | 82.80% | 29.6% | 97.47% | 2.53 | 2 | 0.689 | 0.263 |
-| **150** | 48.66 | 26.20 | 75.61% | 49.1% | 96.81% | 4.79 | 2 | 0.592 | 0.277 |
-| **200** | 42.19 | 20.04 | 72.97% | **56.8%** | 96.88% | 6.24 | 2 | 0.559 | 0.223 |
-| 250-500 | 42.19 | 20.04 | 72.97% | 56.8% | 96.88% | 6.24 | 2 | 0.559 | 0.223 |
+| **150** | 48.63 | 25.95 | 75.80% | 49.1% | 96.80% | 4.80 | 2 | 0.591 | 0.251 |
+| **200** | 42.13 | 19.70 | 73.37% | **57.1%** | 96.90% | 6.20 | 2 | 0.562 | 0.247 |
+| 250-500 | 42.13 | 19.70 | 73.37% | 57.1% | 96.90% | 6.20 | 2 | 0.562 | 0.247 |
 
 **Quan sát quan trọng:**
 1. **TopK = 50**: Silhouette rất cao (0.906) nhưng Coverage chỉ 3.5% - chỉ phân cụm được 136/3,921 khách hàng
 2. **TopK = 100-150**: Coverage tăng lên 29-49% nhưng Silhouette giảm mạnh
-3. **TopK = 200**: Điểm bão hòa - Coverage đạt 56.8% (2,228 khách hàng), tăng thêm TopK không cải thiện
+3. **TopK = 200**: Điểm bão hòa - Coverage đạt 57.1% (2,237 khách hàng), tăng thêm TopK không cải thiện
 4. **TopK > 200**: Không có thêm luật thỏa điều kiện lọc (min_support=0.01, min_confidence=0.3, min_lift=1.5)
 
 #### 1.4 Phân tích Trade-off
 
 | Chỉ số | TopK=50 | TopK=200 | Nhận xét |
 |--------|---------|----------|----------|
-| **Avg Lift** | 71.32 | 42.19 | TopK=50 cao hơn 69% |
-| **Coverage** | 3.5% | 56.8% | TopK=200 cao hơn **16 lần** |
+| **Avg Lift** | 71.32 | 42.13 | TopK=50 cao hơn 69% |
+| **Coverage** | 3.5% | 57.1% | TopK=200 cao hơn **16 lần** |
 | **Meaningful Clusters** | 5 | 5 | Tương đương |
 | **Business Value** | Thấp | **Cao** | TopK=200 phủ nhiều khách hàng hơn |
 
@@ -1337,9 +1331,9 @@ TOPK_VALUES = [50, 100, 150, 200, 250, 300, 400, 500]
 
 **Lý do chọn TopK = 200:**
 
-1. ✅ **Độ phủ cao nhất**: 56.8% khách hàng được cover (2,228/3,921)
+1. ✅ **Độ phủ cao nhất**: 57.1% khách hàng được cover (2,237/3,921)
 2. ✅ **Điểm bão hòa tự nhiên**: Tăng TopK > 200 không có thêm luật đủ điều kiện
-3. ✅ **Chất lượng luật vẫn đảm bảo**: Min Lift = 20.04 (vẫn là liên kết mạnh)
+3. ✅ **Chất lượng luật vẫn đảm bảo**: Min Lift = 19.70 (vẫn là liên kết mạnh)
 4. ✅ **Giá trị thực tiễn**: Có thể đề xuất marketing cho đa số khách hàng
 5. ✅ **Cân bằng tốt**: Trade-off hợp lý giữa chất lượng và số lượng
 
@@ -1351,7 +1345,7 @@ TOPK_VALUES = [50, 100, 150, 200, 250, 300, 400, 500]
 
 #### 2.1 Mục tiêu
 
-So sánh hiệu quả phân cụm giữa **K-Means (V4, K=5)** và **DBSCAN** trên feature matrix V4 (200 luật) dựa trên:
+So sánh hiệu quả phân cụm giữa **K-Means (V4, K=4)** và **DBSCAN** trên feature matrix V4 (200 luật) dựa trên:
 - Các metrics thống kê: Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Index
 - Mức độ "Actionable" - khả năng áp dụng vào thực tế marketing
 
@@ -1364,24 +1358,16 @@ So sánh hiệu quả phân cụm giữa **K-Means (V4, K=5)** và **DBSCAN** tr
 **Biểu đồ trái - K-Distance Graph:**
 - Hiển thị khoảng cách đến k-nearest neighbors (k=min_samples)
 - Điểm uốn (elbow point) xác định giá trị eps phù hợp
-- Suggested eps ≈ 0.15 từ second derivative
+- Suggested eps ≈ 5.10 từ elbow point
 
 **Biểu đồ phải - Grid Search:**
-- Thử nghiệm các cặp (eps, min_samples)
-- eps ∈ [0.05, 0.10, 0.15, 0.20, 0.25]
-- min_samples ∈ [3, 5, 7, 10]
-- Đánh giá theo Silhouette Score (cao hơn = tốt hơn)
+- Thử nghiệm nhiều cặp (eps, min_samples) và lọc cấu hình hợp lệ
+- Đánh giá theo Silhouette Score và Coverage
 
 **Kết quả Grid Search:**
-
-| eps | min_samples | Silhouette | Số cụm | Noise % |
-|-----|-------------|------------|--------|---------|
-| 0.05 | 3 | -0.15 | 2 | 97.8% |
-| 0.10 | 5 | 0.42 | 3 | 45.2% |
-| **0.15** | **5** | **0.48** | **2** | **23.1%** |
-| 0.20 | 5 | 0.39 | 1 | 12.5% |
-
-**Tham số tối ưu được chọn**: eps = 0.15, min_samples = 5
+- **Tham số tối ưu**: eps = 2.0, min_samples = 15
+- **Silhouette Score**: 0.6338
+- **Số cụm**: 2, **Noise**: 23.0%, **Coverage**: 77.0%
 
 #### 2.3 So sánh Metrics
 
@@ -1390,22 +1376,22 @@ So sánh hiệu quả phân cụm giữa **K-Means (V4, K=5)** và **DBSCAN** tr
 **Phân tích biểu đồ:**
 
 **Biểu đồ 1 - Silhouette Score (Higher is better):**
-- K-Means: **0.223** 
-- DBSCAN: **0.484**
-- DBSCAN cao hơn 117% → phân tách cụm rõ ràng hơn
+- K-Means: **0.2712** 
+- DBSCAN: **0.6338**
+- DBSCAN cao hơn ~134% → phân tách cụm rõ ràng hơn
 
 **Biểu đồ 2 - Davies-Bouldin Index (Lower is better):**
-- K-Means: **1.53**
-- DBSCAN: **0.82**
-- DBSCAN thấp hơn 46% → cụm compact hơn
+- K-Means: **1.8351**
+- DBSCAN: **0.4060**
+- DBSCAN thấp hơn ~78% → cụm compact hơn
 
 **Biểu đồ 3 - Calinski-Harabasz Index (Higher is better):**
-- K-Means: **341.2**
-- DBSCAN: **587.8**
-- DBSCAN cao hơn 72% → separation tốt hơn
+- K-Means: **418.58**
+- DBSCAN: **486.65**
+- DBSCAN cao hơn ~16% → separation tốt hơn
 
 **Biểu đồ 4 - Cluster Visualization (PCA 2D):**
-- K-Means: 5 cụm với kích thước khác nhau
+- K-Means: 4 cụm với kích thước khác nhau
 - DBSCAN: 2 cụm chính + noise points (màu đen)
 
 #### 2.4 Đánh giá mức độ "Actionable"
@@ -1416,29 +1402,28 @@ Ngoài metrics thống kê, cần đánh giá khả năng áp dụng thực tế
 
 | Cluster | N_Customers | R_Mean | F_Mean | M_Mean | Pct |
 |---------|-------------|--------|--------|--------|-----|
-| 0 | 297 | 28.26 | 5.81 | 2,112 | 13.3% |
-| 1 | 124 | 60.54 | 21.30 | 17,365 | 5.6% |
-| 2 | 251 | 38.34 | 6.10 | 3,043 | 11.3% |
-| 3 | 1,443 | 79.40 | 4.70 | 1,990 | **64.8%** |
-| 4 | 113 | 51.91 | 10.61 | 6,073 | 5.1% |
+| 0 | 120 | 53.78 | 10.30 | 5,843 | 5.4% |
+| 1 | 1,669 | 74.15 | 4.84 | 2,068 | **74.6%** |
+| 2 | 124 | 60.54 | 21.30 | 17,366 | 5.5% |
+| 3 | 324 | 27.24 | 6.06 | 2,496 | 14.5% |
 
 **DBSCAN - RFM Statistics by Cluster:**
 
 | Cluster | N_Customers | R_Mean | F_Mean | M_Mean | Pct |
 |---------|-------------|--------|--------|--------|-----|
-| 0 | 1,672 | 74.64 | 4.41 | 1,900 | 75.0% |
-| 1 | 41 | 99.80 | 4.66 | 1,703 | 1.8% |
-| Noise | 515 | - | - | - | 23.1% |
+| 0 | 1,681 | 74.72 | 4.39 | 1,894 | 75.1% |
+| 1 | 41 | 99.80 | 4.66 | 1,704 | 1.8% |
+| Noise | 515 | - | - | - | 23.0% |
 
 **Điểm Actionable Score:**
 
 | Metric | K-Means | DBSCAN |
 |--------|---------|--------|
-| **Meaningful Clusters (>1%)** | 5 | 2 |
-| **RFM Discrimination (CV)** | 0.718 | 0.107 |
-| **Coverage** | 100% | 76.9% |
-| **Cluster Balance (Entropy)** | 0.688 | 0.163 |
-| **TOTAL ACTIONABLE SCORE** | **0.853** | **0.357** |
+| **Meaningful Clusters (>1%)** | 4 | 2 |
+| **RFM Discrimination (CV)** | 0.700 | 0.107 |
+| **Coverage** | 100% | 77.0% |
+| **Cluster Balance (Entropy)** | 0.588 | 0.162 |
+| **TOTAL ACTIONABLE SCORE** | **0.828** | **0.382** |
 
 #### 2.5 Kết luận và Khuyến nghị
 
@@ -1452,33 +1437,33 @@ Ngoài metrics thống kê, cần đánh giá khả năng áp dụng thực tế
 - K-Means (xanh) chiếm ưu thế về Coverage và Balance
 
 **Biểu đồ phải - Final Verdict:**
-- **K-Means Actionable Score: 0.853**
-- **DBSCAN Actionable Score: 0.357**
-- K-Means cao hơn **139%** về mức độ Actionable
+- **K-Means Actionable Score: 0.828**
+- **DBSCAN Actionable Score: 0.382**
+- K-Means cao hơn ~117% về mức độ Actionable
 
 #### 2.6 Tổng kết
 
-| Tiêu chí | K-Means (V4, K=5) | DBSCAN | Winner |
+| Tiêu chí | K-Means (V4, K=4) | DBSCAN | Winner |
 |----------|-------------------|--------|--------|
-| Silhouette Score | 0.223 | **0.484** | DBSCAN |
-| Davies-Bouldin Index | 1.53 | **0.82** | DBSCAN |
-| Calinski-Harabasz | 341.2 | **587.8** | DBSCAN |
-| Số cụm có ý nghĩa | **5** | 2 | K-Means |
-| Coverage | **100%** | 76.9% | K-Means |
-| RFM Discrimination | **0.718** | 0.107 | K-Means |
-| Cluster Balance | **0.688** | 0.163 | K-Means |
-| **Actionable Score** | **0.853** | 0.357 | **K-Means** |
+| Silhouette Score | 0.2712 | **0.6338** | DBSCAN |
+| Davies-Bouldin Index | 1.8351 | **0.4060** | DBSCAN |
+| Calinski-Harabasz | 418.58 | **486.65** | DBSCAN |
+| Số cụm có ý nghĩa | **4** | 2 | K-Means |
+| Coverage | **100%** | 77.0% | K-Means |
+| RFM Discrimination | **0.700** | 0.107 | K-Means |
+| Cluster Balance | **0.588** | 0.162 | K-Means |
+| **Actionable Score** | **0.828** | 0.382 | **K-Means** |
 
 **Kết luận:**
 - **DBSCAN** thắng về mặt **thống kê** (Silhouette, DBI, CH)
-- **K-Means (V4, K=5)** thắng về mặt **ứng dụng thực tế** (Coverage, Balance, Discrimination)
+- **K-Means (V4, K=4)** thắng về mặt **ứng dụng thực tế** (Coverage, Balance, Discrimination)
 
 **Khuyến nghị:**
-> 🏆 **Chọn K-Means (V4, K=5)** cho bài toán phân khúc khách hàng vì:
+> 🏆 **Chọn K-Means (V4, K=4)** cho bài toán phân khúc khách hàng vì:
 > 1. **Coverage 100%** - Không bỏ sót khách hàng nào
-> 2. **5 cụm đa dạng** - Đủ chi tiết để tạo 5 chiến lược marketing khác biệt
-> 3. **RFM discrimination cao** - Phân biệt rõ ràng hành vi khách hàng giữa các cụm
-> 4. **Actionable Score 0.853** - Khả năng áp dụng thực tế cao
+> 2. **4 cụm đa dạng** - Đủ chi tiết để tạo 4 chiến lược marketing khác biệt
+> 3. **RFM discrimination cao (0.700)** - Phân biệt rõ ràng hành vi khách hàng giữa các cụm
+> 4. **Actionable Score 0.828** - Khả năng áp dụng thực tế cao
 
 ---
 
