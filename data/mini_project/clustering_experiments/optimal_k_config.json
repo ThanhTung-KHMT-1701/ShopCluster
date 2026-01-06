@@ -1,7 +1,7 @@
 {
   "V1_Binary": {
     "K": 2,
-    "Silhouette": 0.7038999795913696
+    "Silhouette": 0.7049999833106995
   },
   "V2_Weighted": {
     "K": 2,
@@ -9,11 +9,11 @@
   },
   "V3_Binary_RFM": {
     "K": 2,
-    "Silhouette": 0.9621999859809875
+    "Silhouette": 0.9623000025749207
   },
   "V4_Antecedent2": {
-    "K": 5,
-    "Silhouette": 0.8090999722480774
+    "K": 4,
+    "Silhouette": 0.8062999844551086
   },
-  "last_updated": "2025-12-30 03:57:07"
+  "last_updated": "2026-01-06 17:06:00"
 }
