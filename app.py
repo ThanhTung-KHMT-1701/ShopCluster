@@ -58,7 +58,7 @@ def load_feature_comparison():
 @st.cache_data
 def load_customer_clusters():
     """Load phân cụm khách hàng V4"""
-    return pd.read_csv(f"{DATA_DIR}/customer_clusters_v4_k5.csv")
+    return pd.read_csv(f"{DATA_DIR}/customer_clusters_v4_k4.csv")
 
 def load_image(image_name):
     """Load hình ảnh từ thư mục images"""
@@ -122,15 +122,15 @@ if menu == "🏠 Tổng quan":
     with col3:
         st.metric(
             label="👥 Số cụm (V4)",
-            value="5",
-            delta="Silhouette: 0.809"
+            value="4",
+            delta="Silhouette: 0.8063"
         )
     
     with col4:
         st.metric(
             label="🎯 Avg Lift",
-            value="42.19",
-            delta="+70 max"
+            value="42.13",
+            delta="Max: 74.57"
         )
     
     st.markdown("---")
@@ -146,8 +146,8 @@ if menu == "🏠 Tổng quan":
         |------|-------|---------|
         | **1. Association Rules** | Khai thác luật kết hợp bằng FP-Growth | 200 luật (Lift > 20) |
         | **2. Feature Engineering** | Tạo 4 biến thể đặc trưng | V1, V2, V3, V4 |
-        | **3. K-Means Clustering** | Chọn K tối ưu bằng Elbow + Silhouette | K=5 cho V4 |
-        | **4. Visualization** | PCA/SVD giảm chiều về 2D | 73.3% variance |
+        | **3. K-Means Clustering** | Chọn K tối ưu bằng Elbow + Silhouette | K=4 cho V4 |
+        | **4. Visualization** | PCA/SVD giảm chiều về 2D | 71.1% variance |
         | **5. Comparison** | So sánh các biến thể | V4 tốt nhất |
         | **6. Profiling** | Đặt tên cụm + Chiến lược | 5 segments |
         """)
@@ -263,11 +263,36 @@ elif menu == "📜 Luật Kết Hợp":
             img = load_image("Req1_LiftDistribution.png")
             if img:
                 st.image(img, caption="Lift Distribution", use_column_width=True)
+                st.caption("Phân phối Lift từ 19.7-74.6, Mean=42.13 (đường đỏ), Median≈34 (đường cam)")
         
         with col4:
             img = load_image("Req1_MetricsDistribution.png")
             if img:
                 st.image(img, caption="Metrics Distribution", use_column_width=True)
+                st.caption("Box plots: Support (0.01-0.02), Confidence (0.35-0.98), Lift (20-74.57)")
+        
+        # Thêm giải thích các biểu đồ
+        with st.expander("📖 Giải thích chi tiết các biểu đồ"):
+            st.markdown("""
+            **Top 15 Rules by Lift:**
+            - Biểu đồ thanh ngang hiển thị 15 luật có Lift cao nhất
+            - Top 1: HERB MARKER PARSLEY, ROSEMARY → THYME (Lift = 74.57)
+            - Tất cả 15 luật đều thuộc bộ HERB MARKER với Lift > 70
+            
+            **Support vs Confidence:**
+            - Scatter plot 200 điểm, màu gradient theo Lift
+            - Xanh lá đậm = Lift cao (>60), Vàng-đỏ = Lift thấp hơn (20-40)
+            - Đường đứt nét: min_support=0.01 và min_confidence=0.3
+            
+            **Lift Distribution:**
+            - Histogram phân phối Lift của 200 luật
+            - Đa số luật có Lift trong khoảng 25-50
+            - Có nhóm nhỏ luật đặc biệt với Lift > 70
+            
+            **Metrics Distribution:**
+            - 3 box plots cho Support, Confidence, Lift
+            - Support đồng đều, Confidence đa dạng (35%-98%), Lift cao đều (>20)
+            """)
         
     except Exception as e:
         st.error(f"Lỗi load dữ liệu: {e}")
@@ -295,7 +320,7 @@ elif menu == "🎨 Feature Engineering":
         
         **V2_Weighted (Trọng số)**
         - Kích thước: 3,921 × 200
-        - Giá trị: lift × confidence (7.45 - 71.15)
+        - Giá trị: lift × confidence (9.47 - 71.15)
         - Phản ánh độ mạnh của luật
         """)
     
@@ -307,7 +332,7 @@ elif menu == "🎨 Feature Engineering":
         - Kết hợp hành vi mua kèm + giá trị khách hàng
         
         **V4_Antecedent2 (Lọc phức tạp)**
-        - Kích thước: 3,921 × 63
+        - Kích thước: 3,921 × 66
         - Chỉ giữ luật có antecedent ≥ 2 sản phẩm
         - Tập trung pattern mua kèm phức tạp
         """)
@@ -334,11 +359,27 @@ elif menu == "🎨 Feature Engineering":
         img = load_image("Req2_FeatureVariantComparison.png")
         if img:
             st.image(img, caption="Feature Variant Comparison", use_column_width=True)
+            st.caption("So sánh: V1,V2 (200 features), V3 (203), V4 (66). Sparsity: V3 thấp nhất (95.47%)")
     
     with col2:
         img = load_image("Req2_RFMDistribution.png")
         if img:
             st.image(img, caption="RFM Distribution", use_column_width=True)
+            st.caption("Recency: median 51 ngày | Frequency: median 2 đơn | Monetary: median 653 GBP")
+    
+    # Thêm giải thích
+    with st.expander("📖 Giải thích chi tiết các biểu đồ"):
+        st.markdown("""
+        **Feature Variant Comparison (3 subplot):**
+        - Trái: Số features - V1,V2=200, V3=203 (thêm RFM), V4=66 (chỉ luật phức tạp)
+        - Giữa: Sparsity% - V3 thấp nhất (95.47%), V4 cao nhất (97.93%)
+        - Phải: Value Range - V2 rộng nhất (9.47-71.15), V1/V4 chỉ 0-1
+        
+        **RFM Distribution (3 histogram):**
+        - Recency: Lệch phải, đa số mua trong 50 ngày, median=51, mean=92.2 ngày
+        - Frequency: Lệch phải mạnh, đa số 1-2 lần, median=2, max=1,373 đơn
+        - Monetary: Lệch phải mạnh, median=653 GBP, max=1.7M GBP (outlier)
+        """)
 
 # =============================================================================
 # TAB 4: KẾT QUẢ CLUSTERING
@@ -365,10 +406,10 @@ elif menu == "🔬 Kết quả Clustering":
         st.markdown("""
         | Variant | K được chọn | Silhouette | Lý do |
         |---------|-------------|------------|-------|
-        | V1_Binary | 2 | 0.7039 | Silhouette cao nhất |
+        | V1_Binary | 2 | 0.7050 | Silhouette cao nhất |
         | V2_Weighted | 2 | 0.8920 | Silhouette cao nhất |
-        | V3_Binary_RFM | 2 | 0.9622* | *Có outlier RFM |
-        | V4_Antecedent2 | **5** | 0.8091 | Ưu tiên K>2, chênh <20% |
+        | V3_Binary_RFM | 2 | 0.9623* | *Có outlier RFM |
+        | V4_Antecedent2 | **4** | 0.8063 | Ưu tiên K>2, chênh <20% |
         """)
         
         col1, col2 = st.columns(2)
@@ -376,16 +417,19 @@ elif menu == "🔬 Kết quả Clustering":
         with col1:
             img = load_image("Req3_ElbowMethod.png")
             if img:
-                st.image(img, caption="Elbow Method", use_column_width=True)
+                st.image(img, caption="Elbow Method (Normalized Inertia)", use_column_width=True)
+                st.caption("4 subplot: V1, V2, V3, V4. Vùng K=3-6 được highlight. V2, V4 có khuỷu rõ hơn.")
         
         with col2:
             img = load_image("Req3_SilhouetteScore.png")
             if img:
                 st.image(img, caption="Silhouette Score", use_column_width=True)
+                st.caption("Line plot + Heatmap. V3 cao nhất tại K=2 (0.9623), V4 ổn định ~0.78-0.89.")
         
         img = load_image("Req3_BestKComparison.png")
         if img:
             st.image(img, caption="Best K Comparison", use_column_width=True)
+            st.caption("V1,V2,V3 chọn K=2. V4 chọn K=4 (ưu tiên K>2 vì chênh lệch < 20%).")
     
     elif sub_tab == "Trực quan 2D (PCA/SVD)":
         st.subheader("🎯 Giảm chiều về 2D")
@@ -396,17 +440,29 @@ elif menu == "🔬 Kết quả Clustering":
             img = load_image("Req4_PCA_ClusterSeparation.png")
             if img:
                 st.image(img, caption="PCA Cluster Separation", use_column_width=True)
+                st.caption("4 scatter plots với convex hull và centroid (★). V2 ~78%, V4 ~71%.")
         
         with col2:
             img = load_image("Req4_SVD_ClusterSeparation.png")
             if img:
                 st.image(img, caption="SVD Cluster Separation", use_column_width=True)
+                st.caption("SVD giữ nhiều thông tin: V1 (36.8% vs 36.9%), V4 (71.1% vs 71.2%).")
         
         st.markdown("""
+        **📊 Bảng Explained Variance:**
+        
+        | Variant | K | PCA Tổng | SVD Tổng | Nhận xét |
+        |---------|---|----------|----------|----------|
+        | V1_Binary | 2 | 36.9% | 36.8% | Gần tương đương |
+        | V2_Weighted | 2 | **78.1%** | 78.1% | Tương đương |
+        | V3_Binary_RFM | 2 | 40.2% | 40.0% | Có outlier RFM |
+        | V4_Antecedent2 | 4 | 71.2% | 71.1% | Gần tương đương |
+        
         **Nhận xét:**
-        - **SVD phù hợp hơn** cho dữ liệu rule-based features (sparse, binary)
-        - V4 có variance ratio 73.3% trên SVD, clusters tách biệt tốt
-        - V3 có outlier gây méo visualization
+        - PCA và SVD cho kết quả gần tương đương trên dữ liệu hiện tại
+        - V4 giữ ~71% variance, cluster 0 (90.6%) tách rõ với clusters 1-3
+        - V3 có 1 outlier RFM (M=1.7M GBP) gây cluster 1 chỉ có 1 khách hàng
+        - **⚠️ Lưu ý**: Biểu đồ 2D chỉ là "bóng" của không gian gốc, Silhouette tính trong không gian đầy đủ
         """)
     
     else:  # So sánh Variants
@@ -417,12 +473,12 @@ elif menu == "🔬 Kết quả Clustering":
         
         | So sánh | Winner | Lý do |
         |---------|--------|-------|
-        | **Binary vs Weighted** | V2_Weighted | Silhouette 0.892 vs 0.704 |
+        | **Binary vs Weighted** | V2_Weighted | Silhouette 0.892 vs 0.705 |
         | **Rule-only vs Rule+RFM** | V1_Binary | V3 có outlier không đáng tin |
-        | **Top-K Large vs Small** | V4_Antecedent2 | 5 cụm đa dạng, Silhouette 0.809 |
+        | **Top-K Large vs Small** | V4_Antecedent2 | 4 cụm đa dạng, Silhouette 0.806 |
         
         ### Khuyến nghị:
-        - **Marketing Segmentation**: V4_Antecedent2 (5 cụm)
+        - **Marketing Segmentation**: V4_Antecedent2 (4 cụm)
         - **Phân tích hành vi**: V2_Weighted
         - **Baseline**: V1_Binary
         """)
@@ -524,11 +580,13 @@ elif menu == "👥 Phân Khúc Khách Hàng":
             img = load_image("Req6_ClusterDistribution.png")
             if img:
                 st.image(img, caption="Cluster Distribution", use_column_width=True)
+                st.caption("V4: Cluster 0 (90.6%), Clusters 1-3 (2.8%-3.4% mỗi nhóm)")
         
         with col2:
             img = load_image("Req6_ClusterProfileSummary.png")
             if img:
-                st.image(img, caption="Cluster Profile Summary", use_column_width=True)
+                st.image(img, caption="Cluster Profile Summary (RFM)", use_column_width=True)
+                st.caption("3 bar charts: R (C0~97d cao nhất), F (C1=21.3 cao nhất), M (C1=17,366 GBP)")
         
         col3, col4 = st.columns(2)
         
@@ -536,11 +594,13 @@ elif menu == "👥 Phân Khúc Khách Hàng":
             img = load_image("Req6_RuleActivationHeatmap.png")
             if img:
                 st.image(img, caption="Rule Activation Heatmap", use_column_width=True)
+                st.caption("Heatmap Top 15 luật × 4 clusters. C1 (VIP) có nhiều ô đỏ đậm nhất.")
         
         with col4:
             img = load_image(f"Req6_RFMByCluster_V4_Antecedent2.png")
             if img:
                 st.image(img, caption="RFM by Cluster (V4)", use_column_width=True)
+                st.caption("4 box plots/metric. C1 nổi bật về F và M. C0 có R cao nhất.")
         
     except Exception as e:
         st.error(f"Lỗi load dữ liệu: {e}")
@@ -702,7 +762,7 @@ elif menu == "📊 Bổ sung":
             df_display['Best_Silhouette'] = df_display['Best_Silhouette'].round(3)
             df_display['Silhouette_K5'] = df_display['Silhouette_K5'].round(3)
             
-            st.dataframe()
+            st.dataframe(df_display, hide_index=True, use_container_width=True)
             
         except Exception as e:
             st.info("Dữ liệu thử nghiệm TopK chưa có. Vui lòng chạy notebook phần C. Bổ sung.")
@@ -715,8 +775,21 @@ elif menu == "📊 Bổ sung":
         img_topk = load_image("TopK_Experiment_Results.png")
         if img_topk:
             st.image(img_topk, caption="Kết quả thử nghiệm các giá trị TopK", use_column_width=True)
+            st.caption("Gồm: Line chart (Lift, Rules), Bar chart (Coverage%), Heatmap (Silhouette theo K)")
         else:
             st.warning("Chưa có biểu đồ TopK_Experiment_Results.png")
+        
+        with st.expander("📖 Giải thích chi tiết biểu đồ TopK"):
+            st.markdown("""
+            **Biểu đồ gồm nhiều subplot:**
+            - **Line chart (Số luật và Avg Lift theo TopK)**: TopK=50 có Avg Lift cao nhất (71.32), TopK=200 có 200 luật với Avg Lift=42.13
+            - **Bar chart (Coverage %)**: TopK=50 chỉ 3.5% (136 KH), TopK=200 đạt 57.1% (2,237 KH) - điểm bão hòa
+            - **Heatmap (Silhouette theo TopK và K)**: TopK=50 với K=7 có Silhouette cao nhất (0.906)
+            
+            **Quan sát quan trọng:**
+            - TopK > 200: Không có thêm luật thỏa điều kiện lọc (bão hòa tự nhiên)
+            - TopK=200 là điểm cân bằng tốt nhất giữa Coverage và chất lượng luật
+            """)
         
         st.markdown("---")
         
@@ -728,9 +801,9 @@ elif menu == "📊 Bổ sung":
         with col1:
             st.success("""
             **Chọn TopK = 200 vì:**
-            1. ✅ **Độ phủ cao nhất**: 56.8% khách hàng
+            1. ✅ **Độ phủ cao nhất**: 57.1% khách hàng
             2. ✅ **Điểm bão hòa tự nhiên**: TopK > 200 không thêm luật
-            3. ✅ **Min Lift = 20.04**: Vẫn là liên kết mạnh
+            3. ✅ **Min Lift = 19.70**: Vẫn là liên kết mạnh
             4. ✅ **Giá trị thực tiễn cao**
             """)
         
@@ -738,7 +811,7 @@ elif menu == "📊 Bổ sung":
             st.info("""
             **Trade-off:**
             - TopK=50: Silhouette cao (0.906) nhưng Coverage chỉ 3.5%
-            - TopK=200: Coverage 56.8%, Silhouette 0.223 (K=5)
+            - TopK=200: Coverage 57.1%, Silhouette 0.247 (K=5)
             - **Ưu tiên Coverage** cho marketing thực tế
             """)
     
@@ -749,7 +822,7 @@ elif menu == "📊 Bổ sung":
         st.subheader("🔬 So sánh K-Means và DBSCAN trên biến thể V4")
         
         st.markdown("""
-        **Mục tiêu:** So sánh hiệu quả phân cụm giữa **K-Means (V4, K=5)** và **DBSCAN** dựa trên:
+        **Mục tiêu:** So sánh hiệu quả phân cụm giữa **K-Means (V4, K=4)** và **DBSCAN** dựa trên:
         - Metrics thống kê: Silhouette, Davies-Bouldin, Calinski-Harabasz
         - Mức độ "Actionable" - khả năng áp dụng vào thực tế marketing
         """)
@@ -762,14 +835,27 @@ elif menu == "📊 Bổ sung":
         img_param = load_image("DBSCAN_ParameterSearch.png")
         if img_param:
             st.image(img_param, caption="K-Distance Graph và Grid Search cho DBSCAN", use_column_width=True)
+            st.caption("Trái: K-Distance với elbow point. Phải: Grid Search Heatmap (eps × min_samples)")
         else:
             st.warning("Chưa có biểu đồ DBSCAN_ParameterSearch.png")
         
+        with st.expander("📖 Giải thích biểu đồ DBSCAN Parameter Search"):
+            st.markdown("""
+            **K-Distance Graph (trái):**
+            - Trục X: Index điểm dữ liệu (sắp xếp), Trục Y: Khoảng cách đến k-nearest neighbors
+            - Điểm uốn (elbow) xác định eps ≈ 5.10
+            
+            **Grid Search Heatmap (phải):**
+            - Thử nhiều cặp (eps, min_samples) và lọc cấu hình hợp lệ
+            - Màu sắc: Silhouette Score (đỏ = cao, xanh = thấp)
+            - Cấu hình được chọn: eps=2.0, min_samples=15
+            """)
+        
         st.info("""
         **Kết quả Grid Search:**
-        - Tham số tối ưu: **eps = 0.15, min_samples = 5**
-        - Silhouette Score: 0.484
-        - Số cụm: 2 (+ noise points)
+        - Tham số tối ưu: **eps = 2.0, min_samples = 15**
+        - Silhouette Score: 0.6338
+        - Số cụm: 2 (+ 23.0% noise points)
         """)
         
         st.markdown("---")
@@ -780,20 +866,30 @@ elif menu == "📊 Bổ sung":
         img_compare = load_image("KMeans_vs_DBSCAN_Comparison.png")
         if img_compare:
             st.image(img_compare, caption="So sánh K-Means vs DBSCAN", use_column_width=True)
+            st.caption("4 biểu đồ: Silhouette (DBSCAN cao hơn), DBI (DBSCAN thấp hơn), CH (DBSCAN cao hơn), PCA 2D")
         else:
             st.warning("Chưa có biểu đồ KMeans_vs_DBSCAN_Comparison.png")
+        
+        with st.expander("📖 Giải thích biểu đồ so sánh"):
+            st.markdown("""
+            **4 subplot:**
+            1. **Silhouette Score (Higher is better)**: K-Means=0.2712, DBSCAN=0.6338 (+134%)
+            2. **Davies-Bouldin Index (Lower is better)**: K-Means=1.8351, DBSCAN=0.4060 (-78%)
+            3. **Calinski-Harabasz Index (Higher is better)**: K-Means=418.58, DBSCAN=486.65 (+16%)
+            4. **Cluster Visualization (PCA 2D)**: K-Means có 4 cụm, DBSCAN có 2 cụm + noise (đen)
+            """)
         
         # Bảng so sánh metrics
         st.markdown("##### 📋 Bảng so sánh chi tiết")
         
         metrics_data = {
             'Metric': ['Silhouette Score ↑', 'Davies-Bouldin Index ↓', 'Calinski-Harabasz ↑', 'Số cụm có ý nghĩa', 'Coverage'],
-            'K-Means (V4, K=5)': ['0.223', '1.53', '341.2', '5', '100%'],
-            'DBSCAN': ['0.484', '0.82', '587.8', '2', '76.9%'],
+            'K-Means (V4, K=4)': ['0.2712', '1.8351', '418.58', '4', '100%'],
+            'DBSCAN': ['0.6338', '0.4060', '486.65', '2', '77.0%'],
             'Winner': ['DBSCAN', 'DBSCAN', 'DBSCAN', 'K-Means', 'K-Means']
         }
         df_metrics = pd.DataFrame(metrics_data)
-        st.dataframe()
+        st.dataframe(df_metrics, hide_index=True, use_container_width=True)
         
         st.markdown("---")
         
@@ -805,24 +901,26 @@ elif menu == "📊 Bổ sung":
         with col1:
             st.markdown("**K-Means - RFM by Cluster:**")
             kmeans_rfm = {
-                'Cluster': [0, 1, 2, 3, 4],
-                'N': [297, 124, 251, 1443, 113],
-                'R_Mean': [28, 61, 38, 79, 52],
-                'F_Mean': [5.8, 21.3, 6.1, 4.7, 10.6],
-                'M_Mean': ['2,113', '17,366', '3,043', '1,990', '6,074']
+                'Cluster': [0, 1, 2, 3],
+                'N': [120, 1669, 124, 324],
+                'R_Mean': [53.8, 74.1, 60.5, 27.2],
+                'F_Mean': [10.3, 4.8, 21.3, 6.1],
+                'M_Mean': ['5,843', '2,068', '17,366', '2,496']
             }
-            st.dataframe()
+            df_kmeans_rfm = pd.DataFrame(kmeans_rfm)
+            st.dataframe(df_kmeans_rfm, hide_index=True, use_container_width=True)
         
         with col2:
             st.markdown("**DBSCAN - RFM by Cluster:**")
             dbscan_rfm = {
                 'Cluster': [0, 1, 'Noise'],
-                'N': [1672, 41, 515],
-                'R_Mean': [75, 100, '-'],
+                'N': [1681, 41, 515],
+                'R_Mean': [74.7, 99.8, '-'],
                 'F_Mean': [4.4, 4.7, '-'],
-                'M_Mean': ['1,900', '1,704', '-']
+                'M_Mean': ['1,894', '1,704', '-']
             }
-            st.dataframe()
+            df_dbscan_rfm = pd.DataFrame(dbscan_rfm)
+            st.dataframe(df_dbscan_rfm, hide_index=True, use_container_width=True)
         
         st.markdown("---")
         
@@ -832,19 +930,33 @@ elif menu == "📊 Bổ sung":
         img_verdict = load_image("KMeans_vs_DBSCAN_FinalVerdict.png")
         if img_verdict:
             st.image(img_verdict, caption="Final Verdict: K-Means vs DBSCAN", use_column_width=True)
+            st.caption("Radar chart (5 metrics chuẩn hóa) + Bar chart (Actionable Score: K-Means 0.828 vs DBSCAN 0.382)")
         else:
             st.warning("Chưa có biểu đồ KMeans_vs_DBSCAN_FinalVerdict.png")
+        
+        with st.expander("📖 Giải thích biểu đồ Final Verdict"):
+            st.markdown("""
+            **Radar Chart (trái):**
+            - 5 trục: Silhouette, DBI, CH, Coverage, Balance (chuẩn hóa 0-1)
+            - K-Means (xanh): Ưu thế về Coverage và Balance
+            - DBSCAN (đỏ): Ưu thế về Silhouette, DBI, CH
+            
+            **Final Score Bar Chart (phải):**
+            - K-Means Actionable Score: **0.828** (cột cao)
+            - DBSCAN Actionable Score: **0.382** (cột thấp)
+            - K-Means cao hơn ~117% về mức độ Actionable cho marketing
+            """)
         
         # Actionable Score comparison
         st.markdown("##### 📊 Điểm Actionable Score")
         
         actionable_data = {
             'Metric': ['Meaningful Clusters (>1%)', 'RFM Discrimination (CV)', 'Coverage', 'Cluster Balance (Entropy)', 'TOTAL ACTIONABLE SCORE'],
-            'K-Means': ['5', '0.718', '100%', '0.688', '**0.853**'],
-            'DBSCAN': ['2', '0.107', '76.9%', '0.163', '**0.357**']
+            'K-Means': ['4', '0.700', '100%', '0.588', '**0.828**'],
+            'DBSCAN': ['2', '0.107', '77.0%', '0.162', '**0.382**']
         }
         df_actionable = pd.DataFrame(actionable_data)
-        st.dataframe()
+        st.dataframe(df_actionable, hide_index=True, use_container_width=True)
         
         st.markdown("---")
         
@@ -854,29 +966,29 @@ elif menu == "📊 Bổ sung":
         with col1:
             st.error("""
             **DBSCAN thắng về thống kê:**
-            - Silhouette cao hơn 117%
-            - DBI thấp hơn 46%
-            - CH Index cao hơn 72%
+            - Silhouette cao hơn ~134%
+            - DBI thấp hơn ~78%
+            - CH Index cao hơn ~16%
             """)
         
         with col2:
             st.success("""
             **K-Means thắng về ứng dụng:**
             - Coverage 100% (không bỏ sót)
-            - 5 cụm đa dạng cho marketing
-            - Actionable Score cao hơn **139%**
+            - 4 cụm đa dạng cho marketing
+            - Actionable Score cao hơn ~117%
             """)
         
         st.markdown("---")
         
         st.info("""
-        ### 🏆 KHUYẾN NGHỊ: Chọn K-Means (V4, K=5)
+        ### 🏆 KHUYẾN NGHỊ: Chọn K-Means (V4, K=4)
         
         **Lý do:**
         1. ✅ **Coverage 100%** - Không bỏ sót khách hàng nào
-        2. ✅ **5 cụm đa dạng** - Đủ chi tiết để tạo 5 chiến lược marketing khác biệt
-        3. ✅ **RFM discrimination cao (0.718)** - Phân biệt rõ ràng hành vi khách hàng
-        4. ✅ **Actionable Score 0.853** - Khả năng áp dụng thực tế cao
+        2. ✅ **4 cụm đa dạng** - Đủ chi tiết để tạo 4 chiến lược marketing khác biệt
+        3. ✅ **RFM discrimination cao (0.700)** - Phân biệt rõ ràng hành vi khách hàng
+        4. ✅ **Actionable Score 0.828** - Khả năng áp dụng thực tế cao
         """)
 
 # =============================================================================
